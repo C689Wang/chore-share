@@ -16,8 +16,10 @@ type DBService interface {
 	GetChores(householdID uuid.UUID) ([]models.Chore, error)
 	GetChore(choreId uuid.UUID) (models.Chore, error)
 	GetAccount(accountId uuid.UUID) (models.Account, error)
+	GetAccountByGoogleId(googleId string) (models.Account, error)
 	CreateHousehold(household *models.Household) error
 	JoinHousehold(householdId uuid.UUID, accountId uuid.UUID, password string) error
+	GetAccountHouseholds(accountId uuid.UUID) ([]models.Household, error)
 }
 
 type dbService struct {
@@ -29,12 +31,17 @@ func NewDBService(connUrl string) DBService {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&models.Account{}, &models.Chore{}, &models.Household{})
+	db.AutoMigrate(&models.Account{}, &models.Chore{}, &models.Household{}, &models.AccountHousehold{})
 	return &dbService{db: db}
 }
 
 func (s *dbService) CreateAccount(account *models.Account) error {
 	return s.db.Create(account).Error
+}
+
+func (s *dbService) GetAccountByGoogleId(googleId string) (models.Account, error) {
+	var account models.Account
+	return account, s.db.Where("google_id = ?", googleId).First(&account).Error
 }
 
 func (s *dbService) GetAccount(accountId uuid.UUID) (models.Account, error) {
@@ -81,15 +88,22 @@ func (s *dbService) JoinHousehold(householdId uuid.UUID, accountId uuid.UUID, pa
 		return errors.New("invalid password")
 	}
 
-	// Update account's household
-	householdIdStr := householdId.String()
-	result := s.db.Model(&models.Account{}).Where("id = ?", accountId).Update("household_id", householdIdStr)
+	// Create association
+	result := s.db.Create(&models.AccountHousehold{
+		AccountID: accountId,
+		HouseholdID: householdId,
+	})
+
 	if result.Error != nil {
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return errors.New("account not found")
-	}
 
 	return nil
+}
+
+func (s *dbService) GetAccountHouseholds(accountId uuid.UUID) ([]models.Household, error) {
+	var households []models.Household
+	return households, s.db.Model(&models.Account{ID: accountId}).
+		Association("Households").
+		Find(&households)
 }

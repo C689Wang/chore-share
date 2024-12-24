@@ -53,6 +53,16 @@ func (c *Controller) GetAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
+func (c *Controller) GetAccountByGoogleId(ctx *gin.Context) {
+	googleId := ctx.Param("googleId")
+	account, err := c.service.GetAccountByGoogleId(googleId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, account)
+}
+
 func (c *Controller) CreateChore(ctx *gin.Context) {
 	var body models.CreateChoreRequestBody
 	if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -92,14 +102,27 @@ func (c *Controller) CreateHousehold(ctx *gin.Context) {
 		return
 	}
 
+	accountUUID := ctx.Param("accountId")
+	accountId, err := uuid.Parse(accountUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	household := models.Household{
 		Password: body.Password,
-		Name: body.Name,
+		Name:     body.Name,
 	}
 	if err := c.service.CreateHousehold(&household); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	if err := c.service.JoinHousehold(household.ID, accountId, body.Password); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Household created successfully"})
 }
 
@@ -132,4 +155,20 @@ func (c *Controller) JoinHousehold(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully joined household"})
+}
+
+func (c *Controller) GetAccountHouseholds(ctx *gin.Context) {
+	accountUUID := ctx.Param("accountId")
+	accountId, err := uuid.Parse(accountUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	households, err := c.service.GetAccountHouseholds(accountId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, households)
 }	
