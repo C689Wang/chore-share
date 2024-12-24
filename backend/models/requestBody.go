@@ -7,6 +7,8 @@ type CreateAccountRequestBody struct {
 
 type CreateChoreRequestBody struct {
 	Title string `json:"title"`
+	AssignedTo string `json:"assigned_to"`
+	HouseholdID string `json:"household_id"`
 }
 
 type CreateHouseholdRequestBody struct {

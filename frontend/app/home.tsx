@@ -5,15 +5,22 @@ import {
   Pressable,
   TextInput,
   Modal,
+  RefreshControl,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../context/auth";
 import { styles } from "../styles/home.styles";
-import { householdApi, Household } from "../api/households";
+import {
+  useGetHouseholdsQuery,
+  useJoinHouseholdMutation,
+  useCreateHouseholdMutation,
+} from "../store/householdsApi";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
+import { setSelectedHousehold } from "../store/householdsSlice";
+import { router } from "expo-router";
 
 export default function Home() {
-  const [households, setHouseholds] = useState<Household[]>([]);
   const [joinDialogVisible, setJoinDialogVisible] = useState(false);
   const [householdId, setHouseholdId] = useState("");
   const [password, setPassword] = useState("");
@@ -22,37 +29,40 @@ export default function Home() {
   const [createDialogVisible, setCreateDialogVisible] = useState(false);
   const [householdName, setHouseholdName] = useState("");
   const [createPassword, setCreatePassword] = useState("");
+  const dispatch = useAppDispatch();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const {
+    data: households,
+    isLoading,
+    error: fetchError,
+    refetch,
+  } = useGetHouseholdsQuery(user?.id ?? "", {
+    skip: !user?.id,
+  });
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  const [joinHousehold] = useJoinHouseholdMutation();
+  const [createHousehold] = useCreateHouseholdMutation();
 
   if (!user) {
     return null;
   }
 
-  useEffect(() => {
-    if (user?.id) {
-      loadHouseholds();
-    }
-  }, [user]);
-
-  const loadHouseholds = async () => {
-    try {
-      const data = await householdApi.getHouseholds(user!.id);
-      setHouseholds(data);
-    } catch (err) {
-      console.error("Failed to load households:", err);
-    }
-  };
-
   const handleJoinHousehold = async () => {
     try {
-      await householdApi.joinHousehold({
+      await joinHousehold({
         householdID: householdId,
-        accountID: user.id,
+        accountID: user!.id,
         password: password,
-      });
+      }).unwrap();
 
       setJoinDialogVisible(false);
-      // Refresh households list
-      loadHouseholds();
     } catch (err: any) {
       setError(err.message || "Failed to join household");
     }
@@ -60,22 +70,22 @@ export default function Home() {
 
   const handleCreateHousehold = async () => {
     try {
-      // Add validation
       if (!householdName.trim() || !createPassword.trim()) {
         setError("Household name and password are required");
         return;
       }
 
-      await householdApi.createHousehold(user.id, {
-        name: householdName,
-        password: createPassword,
-      });
+      await createHousehold({
+        accountId: user!.id,
+        params: {
+          name: householdName,
+          password: createPassword,
+        },
+      }).unwrap();
 
       setCreateDialogVisible(false);
       setHouseholdName("");
       setCreatePassword("");
-      // Refresh households list
-      loadHouseholds();
     } catch (err: any) {
       setError(err.message || "Failed to create household");
     }
@@ -95,18 +105,24 @@ export default function Home() {
     setError("");
   };
 
+  const handleHouseholdSelect = (householdId: string) => {
+    dispatch(setSelectedHousehold(householdId));
+    // Add navigation or other logic here
+    router.push(`/household`);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>My Households</Text>
         <View style={styles.headerButtons}>
-          <Pressable 
+          <Pressable
             style={[styles.addButton, styles.joinButton]}
             onPress={() => setJoinDialogVisible(true)}
           >
             <MaterialIcons name="group-add" size={24} color="#fff" />
           </Pressable>
-          <Pressable 
+          <Pressable
             style={[styles.addButton, styles.createButton]}
             onPress={() => setCreateDialogVisible(true)}
           >
@@ -115,12 +131,21 @@ export default function Home() {
         </View>
       </View>
 
-      <ScrollView style={styles.householdList}>
-        {households.map((household) => (
+      <ScrollView
+        style={styles.householdList}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#D2D7D3"
+          />
+        }
+      >
+        {households?.map((household) => (
           <Pressable
             key={household.id}
             style={styles.householdCard}
-            onPress={() => {}}
+            onPress={() => handleHouseholdSelect(household.id)}
           >
             <View style={styles.householdInfo}>
               <Text style={styles.householdName}>{household.name}</Text>
@@ -200,7 +225,7 @@ export default function Home() {
             />
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             <View style={styles.modalButtons}>
-              <Pressable 
+              <Pressable
                 style={[styles.button, styles.cancelButton]}
                 onPress={handleCancelCreate}
               >
@@ -210,7 +235,9 @@ export default function Home() {
                 style={[styles.button, styles.joinButton]}
                 onPress={handleCreateHousehold}
               >
-                <Text style={[styles.buttonText, styles.joinButtonText]}>Create</Text>
+                <Text style={[styles.buttonText, styles.joinButtonText]}>
+                  Create
+                </Text>
               </Pressable>
             </View>
           </View>

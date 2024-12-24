@@ -79,13 +79,11 @@ const styles = StyleSheet.create({
 
 export default function Login() {
   const [isLoading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [alreadyHasAccount, setAlreadyHasAccount] = useState(false);
   const { signIn, isLoading: authLoading, user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      router.replace('/home');
+      router.replace("/home");
     }
   }, [user]);
 
@@ -94,12 +92,12 @@ export default function Login() {
       setLoading(true);
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      
+
       // Sign in using auth context
       await signIn(userInfo.data?.user);
-      
+
       // Navigate to home screen
-      router.replace('/home');
+      router.replace("/home");
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log("User cancelled the login flow");
@@ -120,36 +118,9 @@ export default function Login() {
       {isLoading || authLoading ? (
         <ActivityIndicator size="large" />
       ) : (
-        <>
-          {alreadyHasAccount ? (
-            <>
-              <TextInput
-                style={styles.inputField}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholder="Email address"
-              />
-              <TextInput
-                secureTextEntry={true}
-                style={styles.inputField}
-                placeholder="Password"
-                autoCapitalize="none"
-              />
-              <View style={{ marginBottom: 52 }}>
-                <Button title="Sign In" onPress={() => {}} />
-              </View>
-              <Pressable onPress={() => setAlreadyHasAccount(false)}>
-                <Text style={styles.text}>Other sign in methods</Text>
-              </Pressable>
-            </>
-          ) : (
-            <Pressable style={styles.googleButton} onPress={signInWithGoogle}>
-              <GoogleSigninButton />
-            </Pressable>
-          )}
-        </>
+        <Pressable style={styles.googleButton} onPress={signInWithGoogle}>
+          <GoogleSigninButton />
+        </Pressable>
       )}
     </View>
   );
