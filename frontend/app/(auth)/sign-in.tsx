@@ -15,6 +15,7 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
+import { useAuth } from "../../context/auth";
 
 const styles = StyleSheet.create({
   title: {
@@ -80,21 +81,25 @@ export default function Login() {
   const [isLoading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [alreadyHasAccount, setAlreadyHasAccount] = useState(false);
+  const { signIn, isLoading: authLoading, user } = useAuth();
 
   useEffect(() => {
-    GoogleSignin.configure({
-      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    });
-  }, []);
+    if (user) {
+      router.replace('/home');
+    }
+  }, [user]);
 
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-
-      // Handle successful sign in
-      console.log(userInfo);
+      
+      // Sign in using auth context
+      await signIn(userInfo.data?.user);
+      
+      // Navigate to home screen
+      router.replace('/home');
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log("User cancelled the login flow");
@@ -112,7 +117,7 @@ export default function Login() {
 
   return (
     <View style={styles.container}>
-      {isLoading ? (
+      {isLoading || authLoading ? (
         <ActivityIndicator size="large" />
       ) : (
         <>

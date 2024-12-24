@@ -27,9 +27,12 @@ func main() {
 			"message": "pong",
 		})
 	})
-  r.POST("/api/account", controller.CreateAccount)
-  r.POST("/api/chore", controller.CreateChore)
-  r.POST("/api/household", controller.CreateHousehold)
-  r.POST("/api/household/join", controller.JoinHousehold)
-  r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.POST("/api/account", controller.CreateAccount)
+	r.POST("/api/chore", controller.CreateChore)
+	r.POST("/api/account/:accountId/household", controller.CreateHousehold)
+	r.POST("/api/account/:accountId/household/join", controller.JoinHousehold)
+	r.GET("/api/account/:accountId", controller.GetAccount)
+	r.GET("/api/account/google/:googleId", controller.GetAccountByGoogleId)
+	r.GET("/api/account/:accountId/household", controller.GetAccountHouseholds)
+	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
