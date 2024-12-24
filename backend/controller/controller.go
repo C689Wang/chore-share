@@ -70,29 +70,35 @@ func (c *Controller) CreateChore(ctx *gin.Context) {
 		return
 	}
 
-	chore := models.Chore{
-		Title: body.Title,
-	}
-	if err := c.service.CreateChore(&chore); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "Chore created successfully"})
-}
-
-func (c *Controller) GetChores(ctx *gin.Context) {
 	householdUUID := ctx.Param("householdId")
 	householdId, err := uuid.Parse(householdUUID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	chores, err := c.service.GetChores(householdId)
-	if err != nil {
+
+	chore := models.Chore{
+		Title: body.Title,
+		HouseholdID: householdId,
+	}
+
+	// Only parse and create AccountChore if AssignedTo is provided
+	var assignedTo uuid.UUID
+	if body.AssignedTo != "" {
+		var err error
+		assignedTo, err = uuid.Parse(body.AssignedTo)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	if err := c.service.CreateChore(&chore, assignedTo); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, chores)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Chore created successfully"})
 }
 
 func (c *Controller) CreateHousehold(ctx *gin.Context) {
@@ -172,3 +178,50 @@ func (c *Controller) GetAccountHouseholds(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, households)
 }	
+
+func (c *Controller) GetHouseholdChores(ctx *gin.Context) {
+	householdUUID := ctx.Param("householdId")
+	householdId, err := uuid.Parse(householdUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	chores, err := c.service.GetHouseholdChores(householdId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, chores)
+}
+
+func (c *Controller) GetHouseholdLeaderboard(ctx *gin.Context) {
+	householdUUID := ctx.Param("householdId")
+	householdId, err := uuid.Parse(householdUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	leaderboard, err := c.service.GetHouseholdLeaderboard(householdId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, leaderboard)
+}
+
+func (c *Controller) GetAccountChores(ctx *gin.Context) {
+	accountUUID := ctx.Param("accountId")
+	accountId, err := uuid.Parse(accountUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	chores, err := c.service.GetAccountChores(accountId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, chores)
+}

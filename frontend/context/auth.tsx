@@ -71,17 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleNewGoogleUser = async (googleUser: any) => {
     try {
       let account = await accountApi.getAccountByGoogleId(googleUser.id);
-      if (!account) {
-        setUser({
-          id: account.id,
-          name: account.name,
-          googleId: account.google_id,
+      if (account.error) {
+        account = await accountApi.createAccount({
+          google_id: googleUser.id,
+          name: googleUser.name,
         });
       }
-      account = await accountApi.createAccount({
-        google_id: googleUser.id,
-        name: googleUser.name,
-      });
       setUser({
         id: account.id,
         name: account.name,

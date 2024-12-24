@@ -8,14 +8,14 @@ export interface User {
 
 export const accountApi = {
   createAccount: async (params: { google_id: string; name: string }) => {
-    return client.post("/account", params);
+    return client.post("/accounts", params);
   },
 
   getAccount: async (accountId: string) => {
-    return client.get(`/account/${accountId}`);
+    return client.get(`/accounts/${accountId}`);
   },
 
   getAccountByGoogleId: async (googleId: string) => {
-    return client.get(`/account/google/${googleId}`);
+    return client.get(`/accounts/google/${googleId}`);
   },
 };
