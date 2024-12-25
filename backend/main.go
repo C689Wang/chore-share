@@ -32,9 +32,11 @@ func main() {
 	r.GET("/api/accounts/:accountId/households/:householdId/chores", controller.GetAccountChores)
 	r.GET("/api/households/:householdId/chores", controller.GetHouseholdChores)
 	r.GET("/api/households/:householdId/leaderboard", controller.GetHouseholdLeaderboard)
+	r.POST("/api/accounts/:accountId/households", controller.CreateHousehold)
 	r.POST("/api/accounts/:accountId/households/join", controller.JoinHousehold)
 	r.GET("/api/accounts/:accountId", controller.GetAccount)
 	r.GET("/api/accounts/google/:googleId", controller.GetAccountByGoogleId)
 	r.GET("/api/accounts/:accountId/households", controller.GetAccountHouseholds)
+	r.GET("/api/households/:householdId/members", controller.GetHouseholdMembers)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

@@ -13,20 +13,24 @@ type AccountResponse struct {
 }
 
 type ChoreResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Title       string    `json:"title"`
-	Completed   bool      `json:"completed"`
-	HouseholdID uuid.UUID `json:"householdId"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID          uuid.UUID    `json:"id"`
+	Title       string       `json:"title"`
+	Description string       `json:"description"`
+	Type        ChoreType    `json:"type"`
+	Status      ChoreStatus  `json:"status"`
+	HouseholdID uuid.UUID    `json:"householdId"`
+	CreatedAt   time.Time    `json:"createdAt"`
 }
 
 type AccountChoreResponse struct {
-	ID        uuid.UUID     `json:"id"`
-	ChoreID   uuid.UUID     `json:"choreId"`
-	AccountID uuid.UUID     `json:"accountId"`
-	DueDate   *time.Time    `json:"dueDate"`
-	Completed bool          `json:"completed"`
-	Chore     ChoreResponse `json:"chore"`
+	ID          uuid.UUID        `json:"id"`
+	ChoreID     uuid.UUID        `json:"choreId"`
+	AccountID   uuid.UUID        `json:"accountId"`
+	AccountName string           `json:"accountName"`
+	DueDate     time.Time        `json:"dueDate"`
+	Status      AssignmentStatus `json:"status"`
+	CompletedAt *time.Time       `json:"completedAt"`
+	Chore       ChoreResponse    `json:"chore"`
 }
 
 type HouseholdResponse struct {
@@ -38,4 +42,27 @@ type LeaderboardEntryResponse struct {
 	AccountID   uuid.UUID `json:"accountId"`
 	AccountName string    `json:"accountName"`
 	Points      uint      `json:"points"`
+}
+
+type HouseholdMemberResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 } 
+
+type CreateHouseholdResponse struct {
+	ID uuid.UUID `json:"id"`
+	Name string `json:"name"`
+}
+
+type ChoreAssignmentResponse struct {
+	ID            uuid.UUID        `json:"id"`
+	ChoreID       uuid.UUID        `json:"choreId"`
+	AssigneeID    uuid.UUID        `json:"assigneeId"`
+	AssigneeName  string          `json:"assigneeName"`
+	ScheduledDate time.Time        `json:"scheduledDate"`
+	DueDate       time.Time        `json:"dueDate"`
+	CompletedAt   *time.Time       `json:"completedAt"`
+	Status        AssignmentStatus `json:"status"`
+	RotationOrder int              `json:"rotationOrder"`
+	IsCurrentAssignee bool         `json:"isCurrentAssignee"`
+}

@@ -1,14 +1,12 @@
 package models
 
+import (
+	"time"
+)
+
 type CreateAccountRequestBody struct {
 	GoogleId    string `json:"google_id"`
 	Name string `json:"name"`
-}
-
-type CreateChoreRequestBody struct {
-	Title string `json:"title"`
-	AssignedTo string `json:"assigned_to"`
-	HouseholdID string `json:"household_id"`
 }
 
 type CreateHouseholdRequestBody struct {
@@ -20,4 +18,14 @@ type JoinHouseholdRequestBody struct {
 	HouseholdID string `json:"household_id" binding:"required"`
 	Password    string `json:"password" binding:"required"`
 	AccountID   string `json:"account_id" binding:"required"`
+}
+
+type CreateChoreRequestBody struct {
+	Title        string    `json:"title" binding:"required"`
+	Description  string    `json:"description"`
+	Type         string    `json:"type" binding:"required"`
+	EndDate      time.Time `json:"endDate"`
+	Frequency    string    `json:"frequency"`
+	Schedule     []int     `json:"schedule"` // Days of week for recurring
+	AssigneeIDs  []string  `json:"assigneeIds" binding:"required"`
 }
