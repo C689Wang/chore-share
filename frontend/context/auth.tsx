@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Google user is null");
       }
       const account = await accountApi.getAccountByGoogleId(googleUser.id);
-      if (account) {
+      if (!account.error) {
         setUser({
           id: account.id,
           name: account.name,

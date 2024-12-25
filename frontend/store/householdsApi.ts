@@ -1,5 +1,10 @@
 import { api } from "./api";
-import type { Household, CreateHouseholdParams, LeaderboardEntry } from "../models/households";
+import type {
+  Household,
+  CreateHouseholdParams,
+  LeaderboardEntry,
+  HouseholdMember,
+} from "../models/households";
 
 export const householdsApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -9,7 +14,7 @@ export const householdsApi = api.injectEndpoints({
     }),
 
     createHousehold: builder.mutation<
-      void,
+      Household,
       { accountId: string; params: CreateHouseholdParams }
     >({
       query: ({ accountId, params }) => ({
@@ -35,8 +40,16 @@ export const householdsApi = api.injectEndpoints({
     getHouseholdLeaderboard: builder.query<LeaderboardEntry[], string>({
       query: (householdId) => `/households/${householdId}/leaderboard`,
       providesTags: (householdId) => [
-        { type: 'Household', id: `${householdId}-leaderboard` },
-        'Household',
+        { type: "Household", id: `${householdId}-leaderboard` },
+        "Household",
+      ],
+    }),
+
+    getHouseholdMembers: builder.query<HouseholdMember[], string>({
+      query: (householdId) => `/households/${householdId}/members`,
+      providesTags: (result, error, householdId) => [
+        { type: "Household", id: householdId },
+        "Household",
       ],
     }),
   }),
@@ -47,4 +60,5 @@ export const {
   useCreateHouseholdMutation,
   useJoinHouseholdMutation,
   useGetHouseholdLeaderboardQuery,
+  useGetHouseholdMembersQuery,
 } = householdsApi;

@@ -13,3 +13,8 @@ export interface CreateHouseholdParams {
   name: string;
   password: string;
 }
+
+export interface HouseholdMember {
+  id: string;
+  name: string;
+}
