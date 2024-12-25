@@ -75,7 +75,7 @@ export default function Home() {
         return;
       }
 
-      await createHousehold({
+      const household = await createHousehold({
         accountId: user!.id,
         params: {
           name: householdName,
@@ -86,6 +86,8 @@ export default function Home() {
       setCreateDialogVisible(false);
       setHouseholdName("");
       setCreatePassword("");
+      dispatch(setSelectedHousehold(household.id))
+      router.push(`/household`);
     } catch (err: any) {
       setError(err.message || "Failed to create household");
     }
@@ -107,7 +109,6 @@ export default function Home() {
 
   const handleHouseholdSelect = (householdId: string) => {
     dispatch(setSelectedHousehold(householdId));
-    // Add navigation or other logic here
     router.push(`/household`);
   };
 
