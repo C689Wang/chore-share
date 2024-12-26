@@ -1,6 +1,7 @@
 import React from "react";
 import { FlatList, Text, View } from "react-native";
-import { AccountChore } from "../models/chores";
+import { AccountChore, AssignmentStatus } from "../models/chores";
+import { MaterialIcons } from "@expo/vector-icons";
 import { styles } from "../styles/horizontalList.styles";
 
 interface IHorizontalList {
@@ -8,6 +9,28 @@ interface IHorizontalList {
 }
 
 const HorizontalList = ({ items }: IHorizontalList) => {
+  const getBackgroundStyle = (status: AssignmentStatus) => {
+    switch (status) {
+      case AssignmentStatus.COMPLETED:
+        return styles.backgroundCompleted;
+      case AssignmentStatus.PLANNED:
+        return styles.backgroundPlanned;
+      default:
+        return styles.backgroundInProgress;
+    }
+  };
+
+  const getStatusText = (status: AssignmentStatus) => {
+    switch (status) {
+      case AssignmentStatus.COMPLETED:
+        return "Complete";
+      case AssignmentStatus.PLANNED:
+        return "Planned";
+      default:
+        return "In progress";
+    }
+  };
+
   return (
     <View style={[styles.container, styles.listItemShadow]}>
       <Text style={styles.title}>My Chores</Text>
@@ -22,21 +45,25 @@ const HorizontalList = ({ items }: IHorizontalList) => {
             style={[
               styles.listItem,
               styles.listItemShadow,
-              item?.completed
-                ? styles.backgroundCompleted
-                : styles.backgroundInProgress,
+              getBackgroundStyle(item.status),
             ]}
           >
             <Text style={styles.listItemTitle}>{item.chore.title}</Text>
-            {/* <Text style={styles.listItemIcon}>{item.icon}</Text> */}
             <View style={styles.listSubOptions}>
-              <Text>{item.completed ? "Complete" : "In progress"}</Text>
-              {item.completed ? (
+              <Text>{getStatusText(item.status)}</Text>
+              {item.status === AssignmentStatus.COMPLETED ? (
                 <View style={styles.greenCircle}></View>
+              ) : item.status === AssignmentStatus.PLANNED ? (
+                <View style={styles.greyCircle}></View>
               ) : (
                 <View style={styles.yellowCircle}></View>
               )}
             </View>
+            {item.status === AssignmentStatus.PLANNED && (
+              <View style={styles.lockIcon}>
+                <MaterialIcons name="lock-clock" size={20} color="#808080" />
+              </View>
+            )}
           </View>
         )}
       />

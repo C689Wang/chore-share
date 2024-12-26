@@ -1,4 +1,3 @@
-import { useAuth } from "@/context/auth";
 import { AccountChore } from "@/models/chores";
 import React, { useState } from "react";
 import {
@@ -28,10 +27,6 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
   const [isLoading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const completeTask = async (id: string) => {
-    // Implementation
-  };
-
   const getGroupedChores = (chores: AccountChore[]): GroupedChores[] => {
     // Sort chores by due date
     const sortedChores = [...chores].sort(
@@ -42,6 +37,7 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
     const grouped = sortedChores.reduce(
       (acc: { [key: string]: AccountChore[] }, chore) => {
         const date = new Date(chore.dueDate);
+        date.setUTCHours(0, 0, 0, 0);
         const dateKey = date.toISOString().split("T")[0];
 
         if (!acc[dateKey]) {
@@ -55,13 +51,16 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
 
     // Get current week's start and end
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Set to UTC midnight
+    today.setUTCHours(0, 0, 0, 0);
     const endOfWeek = new Date(today);
     endOfWeek.setDate(today.getDate() + 7);
 
     // Convert to array with labels
     return Object.entries(grouped).map(([dateStr, chores]) => {
       const date = new Date(dateStr);
+      // Ensure we're comparing UTC dates
+      date.setUTCHours(0, 0, 0, 0);
       const dayNames = [
         "Sunday",
         "Monday",
@@ -71,12 +70,17 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
         "Friday",
         "Saturday",
       ];
-      const dateString = date.toLocaleDateString();
+      const dateString = date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC'  // Use UTC to avoid timezone shifts
+      });
 
       let label;
-      if (date < today) {
+      if (date.getTime() < today.getTime()) {
         label = "Previous";
-      } else if (date > endOfWeek) {
+      } else if (date.getTime() > endOfWeek.getTime()) {
         label = "Upcoming";
       } else {
         label = dayNames[date.getDay()];
@@ -142,7 +146,6 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
                 <ChoreCard
                   key={chore.id}
                   item={chore}
-                  completeTask={completeTask}
                 />
               ))}
             </View>

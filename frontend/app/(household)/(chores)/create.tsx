@@ -5,20 +5,20 @@ import { useCreateChoreMutation } from "@/store/choresApi";
 import { useAppSelector } from "@/store/hooks";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker, {
-    DateTimePickerEvent,
+  DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    Modal,
-    Platform,
-    ScrollView,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useGetHouseholdMembersQuery } from "../../../store/householdsApi";
 import { styles } from "../../../styles/create.styles";
@@ -107,6 +107,18 @@ export default function Create() {
     }
   };
 
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setDueDate(new Date());
+    setIsRepeated(false);
+    setSelectedAssignee(null);
+    setSelectedRotation([]);
+    setWeekdays(initialWeekdays);
+    setPoints(25);
+    setEmoji("");
+  };
+
   const handleCreate = async () => {
     if (!selectedHouseholdId) {
       Alert.alert("Error", "No household selected");
@@ -139,7 +151,7 @@ export default function Create() {
     try {
       const params: CreateChoreParams = {
         title,
-        endDate: dueDate,
+        endDate: new Date(dueDate.setUTCHours(23, 59, 59, 0)),
         description,
         type: isRepeated
           ? ("RECURRING" as ChoreType)
@@ -162,6 +174,8 @@ export default function Create() {
         householdId: selectedHouseholdId,
         params,
       }).unwrap();
+
+      resetForm();
 
       Alert.alert("Success", "Chore created successfully", [
         {
