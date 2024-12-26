@@ -12,7 +12,10 @@ const householdsPersistConfig = {
   whitelist: ['selectedHouseholdId'], // only persist selectedHouseholdId
 };
 
-const persistedHouseholdsReducer = persistReducer(householdsPersistConfig, householdsReducer);
+const persistedHouseholdsReducer = persistReducer(
+  householdsPersistConfig,
+  householdsReducer
+);
 
 export const store = configureStore({
   reducer: {
@@ -33,4 +36,4 @@ export const persistor = persistStore(store);
 setupListeners(store.dispatch);
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch; 
+export type AppDispatch = typeof store.dispatch;

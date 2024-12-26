@@ -1,5 +1,5 @@
-import { api } from "./api";
-import type { AccountChore, CreateChoreParams } from "../models/chores";
+import { api } from './api';
+import type { AccountChore, CreateChoreParams } from '../models/chores';
 
 export const choresApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -7,8 +7,8 @@ export const choresApi = api.injectEndpoints({
     getHouseholdChores: builder.query<AccountChore[], string>({
       query: (householdId) => `/households/${householdId}/chores`,
       providesTags: (result, error, householdId) => [
-        { type: "Chore", id: householdId },
-        "Chore",
+        { type: 'Chore', id: householdId },
+        'Chore',
       ],
     }),
 
@@ -20,8 +20,8 @@ export const choresApi = api.injectEndpoints({
       query: ({ accountId, householdId }) =>
         `/accounts/${accountId}/households/${householdId}/chores`,
       providesTags: (result, error, { accountId, householdId }) => [
-        { type: "Chore", id: `account-${accountId}-household-${householdId}` },
-        "Chore",
+        { type: 'Chore', id: `account-${accountId}-household-${householdId}` },
+        'Chore',
       ],
     }),
 
@@ -32,13 +32,13 @@ export const choresApi = api.injectEndpoints({
     >({
       query: ({ accountId, householdId, params }) => ({
         url: `/accounts/${accountId}/households/${householdId}/chores`,
-        method: "POST",
+        method: 'POST',
         body: params,
       }),
       invalidatesTags: (result, error, { householdId, accountId }) => [
-        { type: "Chore", id: householdId },
-        { type: "Chore", id: `account-${accountId}-household-${householdId}` },
-        "Chore",
+        { type: 'Chore', id: householdId },
+        { type: 'Chore', id: `account-${accountId}-household-${householdId}` },
+        'Chore',
       ],
     }),
 
@@ -49,13 +49,13 @@ export const choresApi = api.injectEndpoints({
     >({
       query: ({ accountId, householdId, choreId }) => ({
         url: `/accounts/${accountId}/households/${householdId}/chores/${choreId}/complete`,
-        method: "PUT",
+        method: 'PUT',
       }),
       invalidatesTags: (result, error, { householdId, accountId }) => [
-        { type: "Chore", id: householdId },
-        { type: "Chore", id: `account-${accountId}-household-${householdId}` },
-        "Chore",
-        { type: "Household", id: `${householdId}-leaderboard` },
+        { type: 'Chore', id: householdId },
+        { type: 'Chore', id: `account-${accountId}-household-${householdId}` },
+        'Chore',
+        { type: 'Household', id: `${householdId}-leaderboard` },
       ],
     }),
   }),

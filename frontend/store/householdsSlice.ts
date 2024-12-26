@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface HouseholdsState {
   selectedHouseholdId: string | null;
@@ -9,7 +9,7 @@ const initialState: HouseholdsState = {
 };
 
 const householdsSlice = createSlice({
-  name: "households",
+  name: 'households',
   initialState,
   reducers: {
     setSelectedHousehold: (state, action: PayloadAction<string | null>) => {

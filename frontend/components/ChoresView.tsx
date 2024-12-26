@@ -1,14 +1,14 @@
-import { AccountChore } from "@/models/chores";
-import React, { useState } from "react";
+import { AccountChore } from '@/models/chores';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
   Text,
   View,
-} from "react-native";
-import { styles } from "../styles/choresView.styles";
-import ChoreCard from "./ChoreCard";
+} from 'react-native';
+import { styles } from '../styles/choresView.styles';
+import ChoreCard from './ChoreCard';
 
 interface IChoreView {
   isUser: boolean;
@@ -38,7 +38,7 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
       (acc: { [key: string]: AccountChore[] }, chore) => {
         const date = new Date(chore.dueDate);
         date.setUTCHours(0, 0, 0, 0);
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = date.toISOString().split('T')[0];
 
         if (!acc[dateKey]) {
           acc[dateKey] = [];
@@ -62,26 +62,26 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
       // Ensure we're comparing UTC dates
       date.setUTCHours(0, 0, 0, 0);
       const dayNames = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
       ];
       const dateString = date.toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-        timeZone: 'UTC'  // Use UTC to avoid timezone shifts
+        timeZone: 'UTC', // Use UTC to avoid timezone shifts
       });
 
       let label;
       if (date.getTime() < today.getTime()) {
-        label = "Previous";
+        label = 'Previous';
       } else if (date.getTime() > endOfWeek.getTime()) {
-        label = "Upcoming";
+        label = 'Upcoming';
       } else {
         label = dayNames[date.getDay()];
       }
@@ -122,8 +122,8 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#D2D7D3" // Match your app's theme
-              colors={["#DED7D3"]} // For Android
+              tintColor='#D2D7D3' // Match your app's theme
+              colors={['#DED7D3']} // For Android
             />
           }
           renderItem={({ item }) => (
@@ -132,21 +132,18 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
                 <Text
                   style={{
                     fontSize: 18,
-                    fontWeight: "500",
+                    fontWeight: '500',
                     marginBottom: 12,
                   }}
                 >
                   {item.label}
                 </Text>
-                <Text style={{ fontSize: 15, fontWeight: "400" }}>
+                <Text style={{ fontSize: 15, fontWeight: '400' }}>
                   {item.dateString}
                 </Text>
               </View>
               {item.chores.map((chore, index) => (
-                <ChoreCard
-                  key={chore.id}
-                  item={chore}
-                />
+                <ChoreCard key={chore.id} item={chore} />
               ))}
             </View>
           )}

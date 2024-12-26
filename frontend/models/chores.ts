@@ -1,10 +1,10 @@
-export type ChoreType = "ONE_TIME" | "RECURRING";
-export type FrequencyType = "DAILY" | "WEEKLY";
+export type ChoreType = 'ONE_TIME' | 'RECURRING';
+export type FrequencyType = 'DAILY' | 'WEEKLY';
 export enum AssignmentStatus {
-  PENDING = "PENDING",
-  COMPLETED = "COMPLETED",
-  OVERDUE = "OVERDUE",
-  PLANNED = "PLANNED"
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  OVERDUE = 'OVERDUE',
+  PLANNED = 'PLANNED',
 }
 
 export interface CreateChoreParams {
@@ -56,5 +56,7 @@ export interface ChoreSchedule {
 
 // Add a helper function to check if a chore can be toggled
 export function canToggleChore(status: AssignmentStatus): boolean {
-  return status === AssignmentStatus.PENDING || status === AssignmentStatus.OVERDUE;
+  return (
+    status === AssignmentStatus.PENDING || status === AssignmentStatus.OVERDUE
+  );
 }

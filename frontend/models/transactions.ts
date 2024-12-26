@@ -45,4 +45,4 @@ export interface CreateTransactionParams {
   description: string;
   amountInCents: number;
   spentAt: string;
-} 
+}

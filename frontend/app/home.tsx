@@ -6,29 +6,29 @@ import {
   TextInput,
   Modal,
   RefreshControl,
-} from "react-native";
-import { useState, useCallback } from "react";
-import { MaterialIcons } from "@expo/vector-icons";
-import { useAuth } from "../context/auth";
-import { styles } from "../styles/home.styles";
+} from 'react-native';
+import { useState, useCallback } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useAuth } from '../context/auth';
+import { styles } from '../styles/home.styles';
 import {
   useGetHouseholdsQuery,
   useJoinHouseholdMutation,
   useCreateHouseholdMutation,
-} from "../store/householdsApi";
-import { useAppSelector, useAppDispatch } from "../store/hooks";
-import { setSelectedHousehold } from "../store/householdsSlice";
-import { router } from "expo-router";
+} from '../store/householdsApi';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { setSelectedHousehold } from '../store/householdsSlice';
+import { router } from 'expo-router';
 
 export default function Home() {
   const [joinDialogVisible, setJoinDialogVisible] = useState(false);
-  const [householdId, setHouseholdId] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [householdId, setHouseholdId] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const { user } = useAuth();
   const [createDialogVisible, setCreateDialogVisible] = useState(false);
-  const [householdName, setHouseholdName] = useState("");
-  const [createPassword, setCreatePassword] = useState("");
+  const [householdName, setHouseholdName] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
   const dispatch = useAppDispatch();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -37,7 +37,7 @@ export default function Home() {
     isLoading,
     error: fetchError,
     refetch,
-  } = useGetHouseholdsQuery(user?.id ?? "", {
+  } = useGetHouseholdsQuery(user?.id ?? '', {
     skip: !user?.id,
   });
 
@@ -64,14 +64,14 @@ export default function Home() {
 
       setJoinDialogVisible(false);
     } catch (err: any) {
-      setError(err.message || "Failed to join household");
+      setError(err.message || 'Failed to join household');
     }
   };
 
   const handleCreateHousehold = async () => {
     try {
       if (!householdName.trim() || !createPassword.trim()) {
-        setError("Household name and password are required");
+        setError('Household name and password are required');
         return;
       }
 
@@ -84,27 +84,27 @@ export default function Home() {
       }).unwrap();
 
       setCreateDialogVisible(false);
-      setHouseholdName("");
-      setCreatePassword("");
-      dispatch(setSelectedHousehold(household.id))
+      setHouseholdName('');
+      setCreatePassword('');
+      dispatch(setSelectedHousehold(household.id));
       router.push(`/household`);
     } catch (err: any) {
-      setError(err.message || "Failed to create household");
+      setError(err.message || 'Failed to create household');
     }
   };
 
   const handleCancelJoin = () => {
     setJoinDialogVisible(false);
-    setHouseholdId("");
-    setPassword("");
-    setError("");
+    setHouseholdId('');
+    setPassword('');
+    setError('');
   };
 
   const handleCancelCreate = () => {
     setCreateDialogVisible(false);
-    setHouseholdName("");
-    setCreatePassword("");
-    setError("");
+    setHouseholdName('');
+    setCreatePassword('');
+    setError('');
   };
 
   const handleHouseholdSelect = (householdId: string) => {
@@ -121,13 +121,13 @@ export default function Home() {
             style={[styles.addButton, styles.joinButton]}
             onPress={() => setJoinDialogVisible(true)}
           >
-            <MaterialIcons name="group-add" size={24} color="#fff" />
+            <MaterialIcons name='group-add' size={24} color='#fff' />
           </Pressable>
           <Pressable
             style={[styles.addButton, styles.createButton]}
             onPress={() => setCreateDialogVisible(true)}
           >
-            <MaterialIcons name="add" size={24} color="#fff" />
+            <MaterialIcons name='add' size={24} color='#fff' />
           </Pressable>
         </View>
       </View>
@@ -138,7 +138,7 @@ export default function Home() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#D2D7D3"
+            tintColor='#D2D7D3'
           />
         }
       >
@@ -150,7 +150,7 @@ export default function Home() {
           >
             <View style={styles.householdInfo}>
               <Text style={styles.householdName}>{household.name}</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#666" />
+              <MaterialIcons name='chevron-right' size={24} color='#666' />
             </View>
           </Pressable>
         ))}
@@ -159,7 +159,7 @@ export default function Home() {
       <Modal
         visible={joinDialogVisible}
         transparent
-        animationType="slide"
+        animationType='slide'
         onRequestClose={() => setJoinDialogVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -168,13 +168,13 @@ export default function Home() {
 
             <TextInput
               style={styles.input}
-              placeholder="Household ID"
+              placeholder='Household ID'
               value={householdId}
               onChangeText={setHouseholdId}
             />
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder='Password'
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -205,7 +205,7 @@ export default function Home() {
       <Modal
         visible={createDialogVisible}
         transparent
-        animationType="slide"
+        animationType='slide'
         onRequestClose={() => setCreateDialogVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -213,13 +213,13 @@ export default function Home() {
             <Text style={styles.modalTitle}>Create a Household</Text>
             <TextInput
               style={styles.input}
-              placeholder="Household Name"
+              placeholder='Household Name'
               value={householdName}
               onChangeText={setHouseholdName}
             />
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder='Password'
               secureTextEntry
               value={createPassword}
               onChangeText={setCreatePassword}

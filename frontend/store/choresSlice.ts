@@ -22,10 +22,16 @@ const choresSlice = createSlice({
     setSelectedChore: (state, action: PayloadAction<string | null>) => {
       state.selectedChoreId = action.payload;
     },
-    setFilterStatus: (state, action: PayloadAction<'all' | 'completed' | 'pending'>) => {
+    setFilterStatus: (
+      state,
+      action: PayloadAction<'all' | 'completed' | 'pending'>
+    ) => {
       state.filterStatus = action.payload;
     },
-    setSortBy: (state, action: PayloadAction<'date' | 'title' | 'assignee'>) => {
+    setSortBy: (
+      state,
+      action: PayloadAction<'date' | 'title' | 'assignee'>
+    ) => {
       state.sortBy = action.payload;
     },
     setSortOrder: (state, action: PayloadAction<'asc' | 'desc'>) => {
@@ -72,5 +78,6 @@ const choresSlice = createSlice({
 //   return filteredChores;
 // };
 
-export const { setSelectedChore, setFilterStatus, setSortBy, setSortOrder } = choresSlice.actions;
-export default choresSlice.reducer; 
+export const { setSelectedChore, setFilterStatus, setSortBy, setSortOrder } =
+  choresSlice.actions;
+export default choresSlice.reducer;
