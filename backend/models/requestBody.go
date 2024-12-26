@@ -28,4 +28,5 @@ type CreateChoreRequestBody struct {
 	Frequency    string    `json:"frequency"`
 	Schedule     []int     `json:"schedule"` // Days of week for recurring
 	AssigneeIDs  []string  `json:"assigneeIds" binding:"required"`
+	Points       int       `json:"points" binding:"required"`
 }

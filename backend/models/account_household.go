@@ -14,5 +14,4 @@ type AccountHousehold struct {
 	UpdatedAt   time.Time
 	Account     Account   `gorm:"foreignKey:AccountID"`
 	Household   Household `gorm:"foreignKey:HouseholdID"`
-	Points      uint       `gorm:"default:0"`
 }

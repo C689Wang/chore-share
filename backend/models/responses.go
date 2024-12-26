@@ -17,7 +17,6 @@ type ChoreResponse struct {
 	Title       string       `json:"title"`
 	Description string       `json:"description"`
 	Type        ChoreType    `json:"type"`
-	Status      ChoreStatus  `json:"status"`
 	HouseholdID uuid.UUID    `json:"householdId"`
 	CreatedAt   time.Time    `json:"createdAt"`
 }
@@ -30,6 +29,7 @@ type AccountChoreResponse struct {
 	DueDate     time.Time        `json:"dueDate"`
 	Status      AssignmentStatus `json:"status"`
 	CompletedAt *time.Time       `json:"completedAt"`
+	Points      int              `json:"points"`
 	Chore       ChoreResponse    `json:"chore"`
 }
 

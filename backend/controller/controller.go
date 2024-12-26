@@ -103,11 +103,11 @@ func (c *Controller) CreateChore(ctx *gin.Context) {
 		Description:   body.Description,
 		HouseholdID:   householdID,
 		Type:          choreType,
-		Status:        models.ChoreStatusPending,
+		Points:        body.Points,
+		EndDate:       body.EndDate,
 	}
 
 	if choreType == models.ChoreTypeRecurring {
-		chore.EndDate = body.EndDate
 		chore.FrequencyType = &frequencyType
 	}
 

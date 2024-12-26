@@ -1,28 +1,27 @@
+import Avatar from "@/components/Avatar";
+import { useAuth } from "@/context/auth";
+import { ChoreType, CreateChoreParams, FrequencyType } from "@/models/chores";
+import { useCreateChoreMutation } from "@/store/choresApi";
+import { useAppSelector } from "@/store/hooks";
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker, {
-  DateTimePickerEvent,
+    DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  Modal,
-  Platform,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Modal,
+    Platform,
+    ScrollView,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useDispatch } from "react-redux";
-import { styles } from "../../../styles/create.styles";
 import { useGetHouseholdMembersQuery } from "../../../store/householdsApi";
-import Avatar from "@/components/Avatar";
-import { useAppSelector } from "@/store/hooks";
-import { useCreateChoreMutation } from "@/store/choresApi";
-import { CreateChoreParams, ChoreType, FrequencyType } from "@/models/chores";
-import { router } from "expo-router";
-import { useAuth } from "@/context/auth";
+import { styles } from "../../../styles/create.styles";
 
 interface Weekday {
   name: string;
@@ -42,8 +41,6 @@ export default function Create() {
   const selectedHouseholdId = useAppSelector(
     (state) => state.households.selectedHouseholdId
   );
-
-  const dispatch = useDispatch();
 
   const initialWeekdays: Weekday[] = [
     { name: "Sun", selected: false },
@@ -88,6 +85,8 @@ export default function Create() {
   ) => {
     setShowDatePicker(Platform.OS === "ios");
     if (selectedDate) {
+      console.log(selectedDate);
+      console.log(selectedDate.toISOString());
       setDueDate(selectedDate);
     }
   };
@@ -140,15 +139,16 @@ export default function Create() {
     try {
       const params: CreateChoreParams = {
         title,
+        endDate: dueDate,
         description,
         type: isRepeated
           ? ("RECURRING" as ChoreType)
           : ("ONE_TIME" as ChoreType),
         assigneeIds: isRepeated ? selectedRotation : [selectedAssignee!],
+        points,
       };
 
       if (isRepeated) {
-        params.endDate = dueDate;
         params.frequency = "WEEKLY" as FrequencyType;
         params.schedule = weekdays
           .map((day, index) => (day.selected ? (index + 1) % 7 || 7 : 0))
