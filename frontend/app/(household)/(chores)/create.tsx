@@ -1,14 +1,14 @@
-import Avatar from "@/components/Avatar";
-import { useAuth } from "@/context/auth";
-import { ChoreType, CreateChoreParams, FrequencyType } from "@/models/chores";
-import { useCreateChoreMutation } from "@/store/choresApi";
-import { useAppSelector } from "@/store/hooks";
-import { MaterialIcons } from "@expo/vector-icons";
+import Avatar from '@/components/Avatar';
+import { useAuth } from '@/context/auth';
+import { ChoreType, CreateChoreParams, FrequencyType } from '@/models/chores';
+import { useCreateChoreMutation } from '@/store/choresApi';
+import { useAppSelector } from '@/store/hooks';
+import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
-import { router } from "expo-router";
-import React, { useState } from "react";
+} from '@react-native-community/datetimepicker';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
 import {
   Alert,
   Modal,
@@ -19,9 +19,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
-import { useGetHouseholdMembersQuery } from "../../../store/householdsApi";
-import { styles } from "../../../styles/create.styles";
+} from 'react-native';
+import { useGetHouseholdMembersQuery } from '../../../store/householdsApi';
+import { styles } from '../../../styles/create.styles';
 
 interface Weekday {
   name: string;
@@ -30,9 +30,9 @@ interface Weekday {
 
 export default function Create() {
   const { user } = useAuth();
-  const [title, setTitle] = useState<string>("");
+  const [title, setTitle] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [description, setDescription] = useState<string>("");
+  const [description, setDescription] = useState<string>('');
   const [dueDate, setDueDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isRepeated, setIsRepeated] = useState(false);
@@ -43,20 +43,20 @@ export default function Create() {
   );
 
   const initialWeekdays: Weekday[] = [
-    { name: "Sun", selected: false },
-    { name: "Mon", selected: false },
-    { name: "Tues", selected: false },
-    { name: "Wed", selected: false },
-    { name: "Thurs", selected: false },
-    { name: "Fri", selected: false },
-    { name: "Sat", selected: false },
+    { name: 'Sun', selected: false },
+    { name: 'Mon', selected: false },
+    { name: 'Tues', selected: false },
+    { name: 'Wed', selected: false },
+    { name: 'Thurs', selected: false },
+    { name: 'Fri', selected: false },
+    { name: 'Sat', selected: false },
   ];
   const [weekdays, setWeekdays] = useState<Weekday[]>(initialWeekdays);
   const [points, setPoints] = useState(25);
-  const [emoji, setEmoji] = useState<string>("");
+  const [emoji, setEmoji] = useState<string>('');
 
   const { data: members, isLoading: membersLoading } =
-    useGetHouseholdMembersQuery(selectedHouseholdId ?? "");
+    useGetHouseholdMembersQuery(selectedHouseholdId ?? '');
 
   const [createChore, { isLoading: isCreating }] = useCreateChoreMutation();
 
@@ -69,7 +69,7 @@ export default function Create() {
     if (text.length < 2 || isEmojiOnly(text)) {
       setEmoji(text);
     } else {
-      Alert.alert("Please enter only one emoji.");
+      Alert.alert('Please enter only one emoji.');
     }
   };
 
@@ -83,7 +83,7 @@ export default function Create() {
     event: DateTimePickerEvent,
     selectedDate?: Date
   ) => {
-    setShowDatePicker(Platform.OS === "ios");
+    setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       console.log(selectedDate);
       console.log(selectedDate.toISOString());
@@ -108,43 +108,43 @@ export default function Create() {
   };
 
   const resetForm = () => {
-    setTitle("");
-    setDescription("");
+    setTitle('');
+    setDescription('');
     setDueDate(new Date());
     setIsRepeated(false);
     setSelectedAssignee(null);
     setSelectedRotation([]);
     setWeekdays(initialWeekdays);
     setPoints(25);
-    setEmoji("");
+    setEmoji('');
   };
 
   const handleCreate = async () => {
     if (!selectedHouseholdId) {
-      Alert.alert("Error", "No household selected");
+      Alert.alert('Error', 'No household selected');
       return;
     }
 
     if (!title) {
-      Alert.alert("Error", "Please enter a title");
+      Alert.alert('Error', 'Please enter a title');
       return;
     }
 
     if (isRepeated && !weekdays.some((day) => day.selected)) {
       Alert.alert(
-        "Error",
-        "Please select at least one day for recurring chore"
+        'Error',
+        'Please select at least one day for recurring chore'
       );
       return;
     }
 
     if (!isRepeated && !selectedAssignee) {
-      Alert.alert("Error", "Please select an assignee");
+      Alert.alert('Error', 'Please select an assignee');
       return;
     }
 
     if (isRepeated && selectedRotation.length === 0) {
-      Alert.alert("Error", "Please select at least one person for rotation");
+      Alert.alert('Error', 'Please select at least one person for rotation');
       return;
     }
 
@@ -154,14 +154,14 @@ export default function Create() {
         endDate: new Date(dueDate.setUTCHours(23, 59, 59, 0)),
         description,
         type: isRepeated
-          ? ("RECURRING" as ChoreType)
-          : ("ONE_TIME" as ChoreType),
+          ? ('RECURRING' as ChoreType)
+          : ('ONE_TIME' as ChoreType),
         assigneeIds: isRepeated ? selectedRotation : [selectedAssignee!],
         points,
       };
 
       if (isRepeated) {
-        params.frequency = "WEEKLY" as FrequencyType;
+        params.frequency = 'WEEKLY' as FrequencyType;
         params.schedule = weekdays
           .map((day, index) => (day.selected ? (index + 1) % 7 || 7 : 0))
           .filter((day) => day !== 0);
@@ -170,21 +170,21 @@ export default function Create() {
       }
 
       await createChore({
-        accountId: user?.id || "",
+        accountId: user?.id || '',
         householdId: selectedHouseholdId,
         params,
       }).unwrap();
 
       resetForm();
 
-      Alert.alert("Success", "Chore created successfully", [
+      Alert.alert('Success', 'Chore created successfully', [
         {
-          text: "OK",
+          text: 'OK',
           onPress: () => router.back(),
         },
       ]);
     } catch (error) {
-      Alert.alert("Error", "Failed to create chore");
+      Alert.alert('Error', 'Failed to create chore');
       console.error(error);
     }
   };
@@ -194,19 +194,19 @@ export default function Create() {
       <View style={styles.container}>
         <View style={styles.emojiInputContainer}>
           <MaterialIcons
-            name="image"
+            name='image'
             size={24}
-            color="black"
-            style={{ alignSelf: "center" }}
+            color='black'
+            style={{ alignSelf: 'center' }}
           />
           <TextInput
-            placeholder="Add Icon"
+            placeholder='Add Icon'
             value={emoji}
             onChangeText={handleEmojiInputChange}
             style={{
               fontSize: 15,
               borderBottomWidth: 0,
-              borderColor: "transparent",
+              borderColor: 'transparent',
               marginLeft: 8,
               flex: 1,
             }}
@@ -215,8 +215,8 @@ export default function Create() {
         {/* Input for Chore Title */}
         <TextInput
           style={styles.titleInput}
-          placeholder="Chore Title"
-          placeholderTextColor="black"
+          placeholder='Chore Title'
+          placeholderTextColor='black'
           onChangeText={(text) => setTitle(text)}
           value={title}
         />
@@ -224,8 +224,8 @@ export default function Create() {
           <Text style={styles.label}>Description</Text>
           {/* Input for Chore Description */}
           <TextInput
-            placeholder="Insert description here"
-            placeholderTextColor="#ccc"
+            placeholder='Insert description here'
+            placeholderTextColor='#ccc'
             onChangeText={(text) => setDescription(text)}
             value={description}
             style={styles.descriptionInput}
@@ -237,7 +237,7 @@ export default function Create() {
           <Switch
             value={isRepeated}
             onValueChange={setIsRepeated}
-            trackColor={{ false: "#767577", true: "#4CAF50" }}
+            trackColor={{ false: '#767577', true: '#4CAF50' }}
           />
         </View>
 
@@ -319,13 +319,13 @@ export default function Create() {
             style={styles.datePickerButton}
             onPress={showDatePickerModal}
           >
-            <MaterialIcons name="event" size={24} color="black" />
+            <MaterialIcons name='event' size={24} color='black' />
             <Text style={styles.dateText}>{dueDate.toLocaleDateString()}</Text>
           </TouchableOpacity>
 
-          {Platform.OS === "ios" ? (
+          {Platform.OS === 'ios' ? (
             <Modal
-              animationType="slide"
+              animationType='slide'
               transparent={true}
               visible={showDatePicker}
               onRequestClose={() => setShowDatePicker(false)}
@@ -334,8 +334,8 @@ export default function Create() {
                 <View style={styles.modalContent}>
                   <DateTimePicker
                     value={dueDate}
-                    mode="date"
-                    display="spinner"
+                    mode='date'
+                    display='spinner'
                     minimumDate={new Date()}
                     onChange={handleDateChange}
                   />
@@ -352,8 +352,8 @@ export default function Create() {
             showDatePicker && (
               <DateTimePicker
                 value={dueDate}
-                mode="date"
-                display="default"
+                mode='date'
+                display='default'
                 minimumDate={new Date()}
                 onChange={handleDateChange}
               />
@@ -363,8 +363,8 @@ export default function Create() {
         <Text style={styles.label}>Difficulty Level</Text>
         <View
           style={{
-            display: "flex",
-            flexDirection: "row",
+            display: 'flex',
+            flexDirection: 'row',
             columnGap: 18,
             marginBottom: 12,
           }}
@@ -384,9 +384,9 @@ export default function Create() {
             <Text style={styles.listItemText}>points</Text>
             <View style={styles.checkmarkIcon}>
               <MaterialIcons
-                name="check-circle"
+                name='check-circle'
                 size={24}
-                color={points === 25 ? "#4CAF50" : "transparent"}
+                color={points === 25 ? '#4CAF50' : 'transparent'}
               />
             </View>
           </TouchableOpacity>
@@ -405,9 +405,9 @@ export default function Create() {
             <Text style={styles.listItemText}>points</Text>
             <View style={styles.checkmarkIcon}>
               <MaterialIcons
-                name="check-circle"
+                name='check-circle'
                 size={24}
-                color={points === 50 ? "#4CAF50" : "transparent"}
+                color={points === 50 ? '#4CAF50' : 'transparent'}
               />
             </View>
           </TouchableOpacity>
@@ -426,9 +426,9 @@ export default function Create() {
             <Text style={styles.listItemText}>points</Text>
             <View style={styles.checkmarkIcon}>
               <MaterialIcons
-                name="check-circle"
+                name='check-circle'
                 size={24}
-                color={points === 100 ? "#4CAF50" : "transparent"}
+                color={points === 100 ? '#4CAF50' : 'transparent'}
               />
             </View>
           </TouchableOpacity>
@@ -442,7 +442,7 @@ export default function Create() {
           disabled={isCreating || !title}
         >
           <Text style={styles.createButtonText}>
-            {isCreating ? "Creating..." : "Create"}
+            {isCreating ? 'Creating...' : 'Create'}
           </Text>
         </TouchableOpacity>
       </View>

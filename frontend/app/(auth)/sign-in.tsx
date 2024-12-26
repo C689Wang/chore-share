@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,35 +8,35 @@ import {
   ActivityIndicator,
   Pressable,
   Image,
-} from "react-native";
+} from 'react-native';
 import {
   GoogleSignin,
   GoogleSigninButton,
   statusCodes,
-} from "@react-native-google-signin/google-signin";
-import { router } from "expo-router";
-import { useAuth } from "../../context/auth";
+} from '@react-native-google-signin/google-signin';
+import { router } from 'expo-router';
+import { useAuth } from '../../context/auth';
 
 const styles = StyleSheet.create({
   title: {
     marginBottom: 100,
   },
   container: {
-    flexDirection: "column",
+    flexDirection: 'column',
     paddingBottom: 68,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    height: "100%",
-    margin: "auto",
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    height: '100%',
+    margin: 'auto',
   },
   inputField: {
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
     paddingLeft: 8,
     paddingRight: 8,
     marginBottom: 16,
-    width: "80%",
+    width: '80%',
     height: 40,
   },
   headerImage: {
@@ -45,18 +45,18 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    color: "#5F9FFF",
+    color: '#5F9FFF',
   },
   googleButton: {
     width: 267,
     height: 53,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 15,
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -72,8 +72,8 @@ const styles = StyleSheet.create({
   },
   googleText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#000",
+    fontWeight: '600',
+    color: '#000',
   },
 });
 
@@ -84,7 +84,7 @@ export default function Login() {
   useEffect(() => {
     if (user) {
       console.log(user);
-      router.replace("/home");
+      router.replace('/home');
     }
   }, [user]);
 
@@ -98,16 +98,16 @@ export default function Login() {
       await signIn(userInfo.data?.user);
 
       // Navigate to home screen
-      router.replace("/home");
+      router.replace('/home');
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log("User cancelled the login flow");
+        console.log('User cancelled the login flow');
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log("Operation is in progress already");
+        console.log('Operation is in progress already');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        console.log("Play services not available or outdated");
+        console.log('Play services not available or outdated');
       } else {
-        console.log("Something went wrong:", error);
+        console.log('Something went wrong:', error);
       }
     } finally {
       setLoading(false);
@@ -117,7 +117,7 @@ export default function Login() {
   return (
     <View style={styles.container}>
       {isLoading || authLoading ? (
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size='large' />
       ) : (
         <Pressable style={styles.googleButton} onPress={signInWithGoogle}>
           <GoogleSigninButton />

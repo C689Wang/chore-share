@@ -1,11 +1,11 @@
-import { useAuth } from "@/context/auth";
-import { AccountChore, AssignmentStatus } from "@/models/chores";
-import { useToggleChoreCompletionMutation } from "@/store/choresApi";
-import { MaterialIcons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
-import { Switch, Text, View } from "react-native";
-import { styles } from "../styles/choreCard.styles";
-import Avatar from "./Avatar";
+import { useAuth } from '@/context/auth';
+import { AccountChore, AssignmentStatus } from '@/models/chores';
+import { useToggleChoreCompletionMutation } from '@/store/choresApi';
+import { MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { Switch, Text, View } from 'react-native';
+import { styles } from '../styles/choreCard.styles';
+import Avatar from './Avatar';
 
 interface IChoreCard {
   item: AccountChore;
@@ -14,7 +14,9 @@ interface IChoreCard {
 const ChoreCard = ({ item }: IChoreCard) => {
   const { user } = useAuth();
   const [toggleChoreCompletion] = useToggleChoreCompletionMutation();
-  const [localCompleted, setLocalCompleted] = useState(item.status === AssignmentStatus.COMPLETED);
+  const [localCompleted, setLocalCompleted] = useState(
+    item.status === AssignmentStatus.COMPLETED
+  );
   const isCompleted = item.status === AssignmentStatus.COMPLETED;
   const isPlanned = item.status === AssignmentStatus.PLANNED;
 
@@ -34,7 +36,7 @@ const ChoreCard = ({ item }: IChoreCard) => {
   const toggleSwitch = () => {
     setLocalCompleted(!localCompleted);
     toggleChoreCompletion({
-      accountId: user?.id || "",
+      accountId: user?.id || '',
       householdId: item.chore.householdId,
       choreId: item.id,
     });
@@ -55,7 +57,7 @@ const ChoreCard = ({ item }: IChoreCard) => {
       ]}
     >
       <View style={styles.listItemAvatar}>
-        <Avatar size={48} name={item.accountName ?? ""} />
+        <Avatar size={48} name={item.accountName ?? ''} />
         <Text style={styles.accountName}>{item.accountName}</Text>
       </View>
       <View style={{ flex: 1 }}>
@@ -64,12 +66,12 @@ const ChoreCard = ({ item }: IChoreCard) => {
         <View style={styles.listSubOptions}>
           <Text>{`${
             localCompleted
-              ? "Complete"
+              ? 'Complete'
               : isPlanned
-              ? "Planned"
+              ? 'Planned'
               : isOverdue(new Date(item.dueDate))
-              ? "Overdue"
-              : "In Progress"
+              ? 'Overdue'
+              : 'In Progress'
           }`}</Text>
           <View
             style={
@@ -86,19 +88,19 @@ const ChoreCard = ({ item }: IChoreCard) => {
       </View>
       <Text style={styles.points}>+{item.points}</Text>
       {item.accountId === user?.id && !isPlanned ? (
-        <View style={{ alignSelf: "flex-start", marginTop: 5 }}>
+        <View style={{ alignSelf: 'flex-start', marginTop: 5 }}>
           <Switch
-            trackColor={{ false: "rgba(120, 120, 128, 0.16)", true: "#24FF00" }}
-            thumbColor={"#ffffff"}
-            ios_backgroundColor="rgba(120, 120, 128, 0.16)"
+            trackColor={{ false: 'rgba(120, 120, 128, 0.16)', true: '#24FF00' }}
+            thumbColor={'#ffffff'}
+            ios_backgroundColor='rgba(120, 120, 128, 0.16)'
             onValueChange={toggleSwitch}
             value={localCompleted}
             disabled={item.status === AssignmentStatus.COMPLETED}
           />
         </View>
       ) : isPlanned ? (
-        <View style={{ alignSelf: "flex-start", marginTop: 5 }}>
-          <MaterialIcons name="lock-clock" size={24} color="#808080" />
+        <View style={{ alignSelf: 'flex-start', marginTop: 5 }}>
+          <MaterialIcons name='lock-clock' size={24} color='#808080' />
         </View>
       ) : null}
     </View>

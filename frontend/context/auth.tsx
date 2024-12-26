@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { accountApi, User } from "../api/accounts";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { accountApi, User } from '../api/accounts';
 
 interface GoogleUser {
   id: string;
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error("Error checking current user:", error);
+      console.error('Error checking current user:', error);
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ) => {
     try {
       if (!googleUser) {
-        throw new Error("Google user is null");
+        throw new Error('Google user is null');
       }
       const account = await accountApi.getAccountByGoogleId(googleUser.id);
       if (!account.error) {
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch (error) {
-      console.error("Error checking existing user:", error);
+      console.error('Error checking existing user:', error);
     }
   };
 
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         googleId: account.google_id,
       });
     } catch (error) {
-      console.error("Error handling Google user:", error);
+      console.error('Error handling Google user:', error);
       throw error;
     }
   };
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await GoogleSignin.signOut();
       setUser(null);
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error('Error signing out:', error);
       throw error;
     }
   };
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

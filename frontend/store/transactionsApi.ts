@@ -1,10 +1,10 @@
-import { api } from "./api";
-import type { 
-  Transaction, 
-  TransactionSplit, 
-  TransactionSummary, 
-  CreateTransactionParams 
-} from "../models/transactions";
+import { api } from './api';
+import type {
+  Transaction,
+  TransactionSplit,
+  TransactionSummary,
+  CreateTransactionParams,
+} from '../models/transactions';
 
 export const transactionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -18,8 +18,8 @@ export const transactionsApi = api.injectEndpoints({
         params: { month },
       }),
       providesTags: (result, error, { householdId }) => [
-        { type: "Transaction", id: householdId },
-        "Transaction",
+        { type: 'Transaction', id: householdId },
+        'Transaction',
       ],
     }),
 
@@ -33,8 +33,8 @@ export const transactionsApi = api.injectEndpoints({
         params: { month },
       }),
       providesTags: (result, error, { householdId, accountId }) => [
-        { type: "Transaction", id: `${accountId}-${householdId}` },
-        "Transaction",
+        { type: 'Transaction', id: `${accountId}-${householdId}` },
+        'Transaction',
       ],
     }),
 
@@ -42,29 +42,29 @@ export const transactionsApi = api.injectEndpoints({
     getTransactionSplits: builder.query<TransactionSplit[], string>({
       query: (transactionId) => `/transactions/${transactionId}/splits`,
       providesTags: (result, error, transactionId) => [
-        { type: "Transaction", id: `splits-${transactionId}` },
-        "Transaction",
+        { type: 'Transaction', id: `splits-${transactionId}` },
+        'Transaction',
       ],
     }),
 
     // Create a new transaction
     createTransaction: builder.mutation<
       void,
-      { 
-        accountId: string; 
-        householdId: string; 
-        params: CreateTransactionParams 
+      {
+        accountId: string;
+        householdId: string;
+        params: CreateTransactionParams;
       }
     >({
       query: ({ accountId, householdId, params }) => ({
         url: `/accounts/${accountId}/households/${householdId}/transactions`,
-        method: "POST",
+        method: 'POST',
         body: params,
       }),
       invalidatesTags: (result, error, { householdId, accountId }) => [
-        { type: "Transaction", id: householdId },
-        { type: "Transaction", id: `${accountId}-${householdId}` },
-        "Transaction",
+        { type: 'Transaction', id: householdId },
+        { type: 'Transaction', id: `${accountId}-${householdId}` },
+        'Transaction',
       ],
     }),
 
@@ -72,9 +72,9 @@ export const transactionsApi = api.injectEndpoints({
     settleTransactionSplit: builder.mutation<void, string>({
       query: (splitId) => ({
         url: `/transactions/splits/${splitId}/settle`,
-        method: "PUT",
+        method: 'PUT',
       }),
-      invalidatesTags: (result, error, splitId) => ["Transaction"],
+      invalidatesTags: (result, error, splitId) => ['Transaction'],
     }),
   }),
 });
@@ -85,4 +85,4 @@ export const {
   useGetTransactionSplitsQuery,
   useCreateTransactionMutation,
   useSettleTransactionSplitMutation,
-} = transactionsApi; 
+} = transactionsApi;

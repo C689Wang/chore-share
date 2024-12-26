@@ -1,16 +1,16 @@
-import { api } from "./api";
+import { api } from './api';
 import type {
   Household,
   CreateHouseholdParams,
   LeaderboardEntry,
   HouseholdMember,
-} from "../models/households";
+} from '../models/households';
 
 export const householdsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getHouseholds: builder.query<Household[], string>({
       query: (accountId) => `/accounts/${accountId}/households`,
-      providesTags: ["Household"],
+      providesTags: ['Household'],
     }),
 
     createHousehold: builder.mutation<
@@ -19,10 +19,10 @@ export const householdsApi = api.injectEndpoints({
     >({
       query: ({ accountId, params }) => ({
         url: `/accounts/${accountId}/households`,
-        method: "POST",
+        method: 'POST',
         body: params,
       }),
-      invalidatesTags: ["Household"],
+      invalidatesTags: ['Household'],
     }),
 
     joinHousehold: builder.mutation<
@@ -30,26 +30,26 @@ export const householdsApi = api.injectEndpoints({
       { householdID: string; accountID: string; password: string }
     >({
       query: (body) => ({
-        url: "/households/join",
-        method: "POST",
+        url: '/households/join',
+        method: 'POST',
         body,
       }),
-      invalidatesTags: ["Household"],
+      invalidatesTags: ['Household'],
     }),
 
     getHouseholdLeaderboard: builder.query<LeaderboardEntry[], string>({
       query: (householdId) => `/households/${householdId}/leaderboard`,
       providesTags: (result, error, householdId) => [
-        { type: "Household", id: `${householdId}-leaderboard` },
-        "Household",
+        { type: 'Household', id: `${householdId}-leaderboard` },
+        'Household',
       ],
     }),
 
     getHouseholdMembers: builder.query<HouseholdMember[], string>({
       query: (householdId) => `/households/${householdId}/members`,
       providesTags: (result, error, householdId) => [
-        { type: "Household", id: householdId },
-        "Household",
+        { type: 'Household', id: householdId },
+        'Household',
       ],
     }),
   }),

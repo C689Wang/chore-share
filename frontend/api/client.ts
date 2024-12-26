@@ -1,10 +1,10 @@
-const BASE_URL = "http://localhost:8080/api";
+const BASE_URL = 'http://localhost:8080/api';
 
 async function handleResponse(response: Response) {
   const data = await response.json();
 
   if (!response.ok) {
-    return { error: data.error || "Something went wrong" };
+    return { error: data.error || 'Something went wrong' };
   }
 
   return data;
@@ -18,9 +18,9 @@ export const client = {
 
   post: async (endpoint: string, body: any) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
     });

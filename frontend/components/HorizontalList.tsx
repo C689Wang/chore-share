@@ -1,8 +1,8 @@
-import React from "react";
-import { FlatList, Text, View } from "react-native";
-import { AccountChore, AssignmentStatus } from "../models/chores";
-import { MaterialIcons } from "@expo/vector-icons";
-import { styles } from "../styles/horizontalList.styles";
+import React from 'react';
+import { FlatList, Text, View } from 'react-native';
+import { AccountChore, AssignmentStatus } from '../models/chores';
+import { MaterialIcons } from '@expo/vector-icons';
+import { styles } from '../styles/horizontalList.styles';
 
 interface IHorizontalList {
   items: AccountChore[];
@@ -23,11 +23,11 @@ const HorizontalList = ({ items }: IHorizontalList) => {
   const getStatusText = (status: AssignmentStatus) => {
     switch (status) {
       case AssignmentStatus.COMPLETED:
-        return "Complete";
+        return 'Complete';
       case AssignmentStatus.PLANNED:
-        return "Planned";
+        return 'Planned';
       default:
-        return "In progress";
+        return 'In progress';
     }
   };
 
@@ -61,7 +61,7 @@ const HorizontalList = ({ items }: IHorizontalList) => {
             </View>
             {item.status === AssignmentStatus.PLANNED && (
               <View style={styles.lockIcon}>
-                <MaterialIcons name="lock-clock" size={20} color="#808080" />
+                <MaterialIcons name='lock-clock' size={20} color='#808080' />
               </View>
             )}
           </View>

@@ -1,7 +1,7 @@
-import ChoresView from "@/components/ChoresView";
-import { useAuth } from "@/context/auth";
-import { useGetHouseholdChoresQuery } from "@/store/choresApi";
-import { useAppSelector } from "@/store/hooks";
+import ChoresView from '@/components/ChoresView';
+import { useAuth } from '@/context/auth';
+import { useGetHouseholdChoresQuery } from '@/store/choresApi';
+import { useAppSelector } from '@/store/hooks';
 
 export default function Week() {
   const { user } = useAuth();
@@ -9,12 +9,14 @@ export default function Week() {
     (state) => state.households.selectedHouseholdId
   );
   const { data: chores, refetch } = useGetHouseholdChoresQuery(
-    selectedHouseholdId || ""
+    selectedHouseholdId || ''
   );
 
   const handleRefresh = async () => {
     await refetch().unwrap();
   };
 
-  return <ChoresView isUser={false} data={chores || []} onRefresh={handleRefresh} />;
+  return (
+    <ChoresView isUser={false} data={chores || []} onRefresh={handleRefresh} />
+  );
 }

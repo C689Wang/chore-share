@@ -1,4 +1,4 @@
-import { client } from "./client";
+import { client } from './client';
 
 export interface User {
   id: string;
@@ -8,7 +8,7 @@ export interface User {
 
 export const accountApi = {
   createAccount: async (params: { google_id: string; name: string }) => {
-    return client.post("/accounts", params);
+    return client.post('/accounts', params);
   },
 
   getAccount: async (accountId: string) => {
