@@ -66,3 +66,13 @@ type ChoreAssignmentResponse struct {
 	RotationOrder int              `json:"rotationOrder"`
 	IsCurrentAssignee bool         `json:"isCurrentAssignee"`
 }
+
+type TransactionResponse struct {
+	ID            uuid.UUID  `json:"id"`
+	Name          string     `json:"name"`
+	Description   string     `json:"description"`
+	AmountInCents int       `json:"amountInCents"`
+	AccountID     uuid.UUID  `json:"accountId"`
+	HouseholdID   uuid.UUID  `json:"householdId"`
+	SpentOn       time.Time `json:"spentOn"`
+}

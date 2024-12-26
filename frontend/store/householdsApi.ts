@@ -39,7 +39,7 @@ export const householdsApi = api.injectEndpoints({
 
     getHouseholdLeaderboard: builder.query<LeaderboardEntry[], string>({
       query: (householdId) => `/households/${householdId}/leaderboard`,
-      providesTags: (householdId) => [
+      providesTags: (result, error, householdId) => [
         { type: "Household", id: `${householdId}-leaderboard` },
         "Household",
       ],

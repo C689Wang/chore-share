@@ -100,4 +100,13 @@ export const styles = StyleSheet.create({
     bottom: 15,
     right: 20,
   },
+  listItemPlanned: {
+    backgroundColor: "#F5F5F5",
+  },
+  greyCircle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#808080",
+  },
 });

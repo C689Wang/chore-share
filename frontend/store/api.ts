@@ -1,9 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const BASE_URL = "http://localhost:8080/api";
-
 export const api = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),
-  tagTypes: ['Household', 'Chore'],
+  baseQuery: fetchBaseQuery({ baseUrl: process.env.EXPO_PUBLIC_API_URL }),
+  tagTypes: ["Household", "Chore", "Transaction"],
   endpoints: () => ({}),
 }); 

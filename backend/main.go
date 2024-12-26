@@ -38,5 +38,11 @@ func main() {
 	r.GET("/api/accounts/google/:googleId", controller.GetAccountByGoogleId)
 	r.GET("/api/accounts/:accountId/households", controller.GetAccountHouseholds)
 	r.GET("/api/households/:householdId/members", controller.GetHouseholdMembers)
+	r.PUT("/api/accounts/:accountId/households/:householdId/chores/:accountChoreId/complete", controller.CompleteChore)
+	r.POST("/api/accounts/:accountId/households/:householdId/transactions", controller.CreateTransaction)
+	r.GET("/api/accounts/:accountId/households/:householdId/transactions", controller.GetTransactions)
+	r.GET("/api/accounts/:accountId/households/:householdId/transactions/summary", controller.GetTransactionSummary)
+	r.GET("/api/transactions/:transactionId/splits", controller.GetTransactionSplits)
+	r.PUT("/api/transactions/splits/:splitId/settle", controller.SettleTransactionSplit)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

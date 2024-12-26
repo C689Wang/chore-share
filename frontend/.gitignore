@@ -45,3 +45,5 @@ android/
 GoogleService-Info.plist
 
 .env
+
+.settings.json

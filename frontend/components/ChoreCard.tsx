@@ -1,50 +1,53 @@
-import React, { useState } from "react";
-import { Image, Switch, Text, View } from "react-native";
-import { styles } from "../styles/choreCard.styles";
-import { AccountChore } from "@/models/chores";
-import Avatar from "./Avatar";
 import { useAuth } from "@/context/auth";
+import { AccountChore, AssignmentStatus } from "@/models/chores";
+import { useToggleChoreCompletionMutation } from "@/store/choresApi";
+import { MaterialIcons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import { Switch, Text, View } from "react-native";
+import { styles } from "../styles/choreCard.styles";
+import Avatar from "./Avatar";
+
 interface IChoreCard {
   item: AccountChore;
-  completeTask: (choreId: string) => void;
 }
 
-const ChoreCard = ({ item, completeTask }: IChoreCard) => {
+const ChoreCard = ({ item }: IChoreCard) => {
   const { user } = useAuth();
-  const [isEnabled, setIsEnabled] = useState<boolean>(
-    item.status === "COMPLETED"
-  );
+  const [toggleChoreCompletion] = useToggleChoreCompletionMutation();
+  const [localCompleted, setLocalCompleted] = useState(item.status === AssignmentStatus.COMPLETED);
+  const isCompleted = item.status === AssignmentStatus.COMPLETED;
+  const isPlanned = item.status === AssignmentStatus.PLANNED;
 
-  const toggleSwitch = () => {
-    setIsEnabled((previousState) => {
-      return !previousState;
-    });
-    completeTask(item.id);
-  };
-
-  const isSameOrBefore = (date1: Date, date2: Date): boolean => {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
-  };
+  useEffect(() => {
+    setLocalCompleted(isCompleted);
+  }, [isCompleted]);
 
   const isOverdue = (dueDate: Date): boolean => {
     const today = new Date();
     const due = new Date(dueDate);
     // Reset time parts to compare dates only
-    today.setHours(0, 0, 0, 0);
-    due.setHours(0, 0, 0, 0);
-    return due < today;
+    today.setUTCHours(0, 0, 0, 0);
+    due.setUTCHours(0, 0, 0, 0);
+    return due.getTime() < today.getTime();
+  };
+
+  const toggleSwitch = () => {
+    setLocalCompleted(!localCompleted);
+    toggleChoreCompletion({
+      accountId: user?.id || "",
+      householdId: item.chore.householdId,
+      choreId: item.id,
+    });
   };
 
   return (
     <View
       style={[
         styles.listItemShadow,
-        isEnabled
+        localCompleted
           ? styles.listItemComplete
+          : isPlanned
+          ? styles.listItemPlanned
           : isOverdue(new Date(item.dueDate))
           ? styles.listItemOverdue
           : styles.listItemInProgress,
@@ -60,16 +63,20 @@ const ChoreCard = ({ item, completeTask }: IChoreCard) => {
         <Text style={styles.listItemDescription}>{item.chore.description}</Text>
         <View style={styles.listSubOptions}>
           <Text>{`${
-            isEnabled
+            localCompleted
               ? "Complete"
+              : isPlanned
+              ? "Planned"
               : isOverdue(new Date(item.dueDate))
               ? "Overdue"
               : "In Progress"
           }`}</Text>
           <View
             style={
-              isEnabled
+              localCompleted
                 ? styles.greenCircle
+                : isPlanned
+                ? styles.greyCircle
                 : isOverdue(new Date(item.dueDate))
                 ? styles.redCircle
                 : styles.yellowCircle
@@ -78,17 +85,22 @@ const ChoreCard = ({ item, completeTask }: IChoreCard) => {
         </View>
       </View>
       <Text style={styles.points}>+{item.points}</Text>
-      {item.accountId === user?.id && (
+      {item.accountId === user?.id && !isPlanned ? (
         <View style={{ alignSelf: "flex-start", marginTop: 5 }}>
           <Switch
             trackColor={{ false: "rgba(120, 120, 128, 0.16)", true: "#24FF00" }}
             thumbColor={"#ffffff"}
             ios_backgroundColor="rgba(120, 120, 128, 0.16)"
             onValueChange={toggleSwitch}
-            value={isEnabled}
+            value={localCompleted}
+            disabled={item.status === AssignmentStatus.COMPLETED}
           />
         </View>
-      )}
+      ) : isPlanned ? (
+        <View style={{ alignSelf: "flex-start", marginTop: 5 }}>
+          <MaterialIcons name="lock-clock" size={24} color="#808080" />
+        </View>
+      ) : null}
     </View>
   );
 };

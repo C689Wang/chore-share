@@ -30,3 +30,9 @@ type CreateChoreRequestBody struct {
 	AssigneeIDs  []string  `json:"assigneeIds" binding:"required"`
 	Points       int       `json:"points" binding:"required"`
 }
+
+type CreateTransactionRequestBody struct {
+	Description   string    `json:"description"`
+	AmountInCents int64     `json:"amountInCents"`
+	SpentAt       time.Time `json:"spentAt"`
+}

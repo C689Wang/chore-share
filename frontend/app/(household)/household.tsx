@@ -1,14 +1,14 @@
-import React from "react";
-import { ActivityIndicator, Text, View } from "react-native";
-import { styles } from "@/styles/household.styles";
-import { LinearGradient } from "expo-linear-gradient";
-import HorizontalList from "@/components/HorizontalList";
-import { useGetHouseholdLeaderboardQuery } from "@/store/householdsApi";
-import { useGetAccountChoresQuery } from "@/store/choresApi";
-import { useAuth } from "@/context/auth";
-import { useAppSelector } from "@/store/hooks";
-import { LeaderboardEntry } from "@/models/households";
-import Avatar from "@/components/Avatar";
+import React from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
+import { styles } from '@/styles/household.styles';
+import { LinearGradient } from 'expo-linear-gradient';
+import HorizontalList from '@/components/HorizontalList';
+import { useGetHouseholdLeaderboardQuery } from '@/store/householdsApi';
+import { useGetAccountChoresQuery } from '@/store/choresApi';
+import { useAuth } from '@/context/auth';
+import { useAppSelector } from '@/store/hooks';
+import { LeaderboardEntry } from '@/models/households';
+import Avatar from '@/components/Avatar';
 
 const Household = () => {
   const { user } = useAuth();
@@ -18,15 +18,15 @@ const Household = () => {
 
   // Fetch leaderboard and chores data using RTK Query
   const { data: leaderboard = [], isLoading: isLeaderboardLoading } =
-    useGetHouseholdLeaderboardQuery(selectedHouseholdId ?? "", {
+    useGetHouseholdLeaderboardQuery(selectedHouseholdId ?? '', {
       skip: !selectedHouseholdId,
     });
 
   const { data: accountChores = [], isLoading: isChoresLoading } =
     useGetAccountChoresQuery(
       {
-        accountId: user?.id ?? "",
-        householdId: selectedHouseholdId ?? "",
+        accountId: user?.id ?? '',
+        householdId: selectedHouseholdId ?? '',
       },
       {
         skip: !user?.id || !selectedHouseholdId,
@@ -40,33 +40,33 @@ const Household = () => {
 
   const getCurrentMonth = () => {
     const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return monthNames[new Date().getMonth()];
   };
 
   const colors = [
-    ["#D5F5Df", "#C0F1C9"],
-    ["#FCE3FC", "#DBD2FB"],
-    ["#FFE9A4", "#FED8A3"],
-    ["#D3FBFD", "#C2EAFC"],
-    ["#FFD6E5", "#FFBDC7"],
-    ["#E0C3FC", "#B8A7FF"],
-    ["#FFCBA4", "#FFB088"],
-    ["#A8E6CF", "#86DEB7"],
-    ["#FFF3B0", "#FFE66D"],
-    ["#C4E0E5", "#A5CAE3"],
+    ['#D5F5Df', '#C0F1C9'],
+    ['#FCE3FC', '#DBD2FB'],
+    ['#FFE9A4', '#FED8A3'],
+    ['#D3FBFD', '#C2EAFC'],
+    ['#FFD6E5', '#FFBDC7'],
+    ['#E0C3FC', '#B8A7FF'],
+    ['#FFCBA4', '#FFB088'],
+    ['#A8E6CF', '#86DEB7'],
+    ['#FFF3B0', '#FFE66D'],
+    ['#C4E0E5', '#A5CAE3'],
   ];
 
   const isLoading = isLeaderboardLoading || isChoresLoading;
@@ -77,17 +77,10 @@ const Household = () => {
         <ActivityIndicator />
       ) : (
         <>
-          <Text
-            style={styles.monthTitle}
-          >
-            {getCurrentMonth()}
-          </Text>
+          <Text style={styles.monthTitle}>{getCurrentMonth()}</Text>
           <View style={styles.leaderboardContainer}>
             {leaderboard.map((entry: LeaderboardEntry, index: number) => (
-              <View
-                key={entry.accountId}
-                style={styles.leaderboardEntry}
-              >
+              <View key={entry.accountId} style={styles.leaderboardEntry}>
                 {entry.points === maxPoints && (
                   <Text style={styles.leaderboardItemCrown}>👑</Text>
                 )}
@@ -105,7 +98,7 @@ const Household = () => {
                 >
                   <View
                     style={{
-                      width: "100%",
+                      width: '100%',
                       height: `${(entry.points / maxPoints) * 50}%`,
                       borderTopLeftRadius: 20,
                       borderTopEndRadius: 20,

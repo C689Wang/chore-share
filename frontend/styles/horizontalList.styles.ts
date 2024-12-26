@@ -85,4 +85,18 @@ export const styles = StyleSheet.create({
   listItemIcon: {
     fontSize: 80,
   },
+  backgroundPlanned: {
+    backgroundColor: "#F5F5F5",
+  },
+  greyCircle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#808080",
+  },
+  lockIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
 });

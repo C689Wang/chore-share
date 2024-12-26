@@ -42,15 +42,22 @@ export const choresApi = api.injectEndpoints({
       ],
     }),
 
-    // // Toggle chore completion
-    // toggleChoreCompletion: builder.mutation<void, { choreId: string; completed: boolean }>({
-    //   query: ({ choreId, completed }) => ({
-    //     url: `/chores/${choreId}/complete`,
-    //     method: 'PUT',
-    //     body: { completed },
-    //   }),
-    //   invalidatesTags: ['Chore'],
-    // }),
+    // Toggle chore completion
+    toggleChoreCompletion: builder.mutation<
+      void,
+      { accountId: string; householdId: string; choreId: string }
+    >({
+      query: ({ accountId, householdId, choreId }) => ({
+        url: `/accounts/${accountId}/households/${householdId}/chores/${choreId}/complete`,
+        method: "PUT",
+      }),
+      invalidatesTags: (result, error, { householdId, accountId }) => [
+        { type: "Chore", id: householdId },
+        { type: "Chore", id: `account-${accountId}-household-${householdId}` },
+        "Chore",
+        { type: "Household", id: `${householdId}-leaderboard` },
+      ],
+    }),
   }),
 });
 
@@ -58,4 +65,5 @@ export const {
   useGetHouseholdChoresQuery,
   useGetAccountChoresQuery,
   useCreateChoreMutation,
+  useToggleChoreCompletionMutation,
 } = choresApi;
