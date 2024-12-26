@@ -1,10 +1,10 @@
 import { api } from "./api";
-import type { AccountChore, Chore, CreateChoreParams } from "../models/chores";
+import type { AccountChore, CreateChoreParams } from "../models/chores";
 
 export const choresApi = api.injectEndpoints({
   endpoints: (builder) => ({
     // Get all chores for a household
-    getHouseholdChores: builder.query<Chore[], string>({
+    getHouseholdChores: builder.query<AccountChore[], string>({
       query: (householdId) => `/households/${householdId}/chores`,
       providesTags: (result, error, householdId) => [
         { type: "Chore", id: householdId },

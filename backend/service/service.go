@@ -14,7 +14,6 @@ import (
 type DBService interface {
 	CreateAccount(account *models.Account) (models.AccountResponse, error)
 	CreateChore(chore *models.Chore, assignees []uuid.UUID, schedule []models.ChoreSchedule) error
-	CreateAccountChore(accountChore *models.AccountChore) error
 	GetAccount(accountId uuid.UUID) (models.AccountResponse, error)
 	GetAccountByGoogleId(googleId string) (models.AccountResponse, error)
 	CreateHousehold(household *models.Household) error
@@ -106,6 +105,7 @@ func (s *dbService) CreateChore(chore *models.Chore, assignees []uuid.UUID, sche
 				HouseholdID:   chore.HouseholdID,
 				DueDate:       chore.EndDate,
 				Status:        models.AssignmentStatusPending,
+				Points:        chore.Points,
 			}
 			if err := tx.Create(&accountChore).Error; err != nil {
 				tx.Rollback()
@@ -163,7 +163,7 @@ func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore,
 	for date := startDate; date.Before(endDate); date = date.AddDate(0, 0, 1) {
 		weekday := int(date.Weekday())
 		if weekday == 0 {
-				weekday = 7
+			weekday = 7
 		}
 
 		// Check if this day is in schedule
@@ -182,10 +182,11 @@ func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore,
 				accountChore := models.AccountChore{
 					ChoreID:       chore.ID,
 					AccountID:     assignees[assigneeIndex],
-						HouseholdID:   chore.HouseholdID,
-						DueDate:       dueDate,
-						Status:        status,
-						RotationOrder: assigneeIndex,
+					HouseholdID:   chore.HouseholdID,
+					DueDate:       dueDate,
+					Status:        status,
+					RotationOrder: assigneeIndex,
+					Points:        chore.Points,
 				}
 
 				if err := tx.Create(&accountChore).Error; err != nil {
@@ -199,9 +200,6 @@ func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore,
 	return nil
 }
 
-func (s *dbService) CreateAccountChore(accountChore *models.AccountChore) error {
-	return s.db.Create(accountChore).Error
-}
 
 func (s *dbService) CreateHousehold(household *models.Household) error {
 	// Generate hash
@@ -269,7 +267,7 @@ func (s *dbService) GetAccountChores(accountId uuid.UUID, householdId uuid.UUID)
 	currentMonthEnd := currentMonthStart.AddDate(0, 1, 0).Add(-time.Second)
 
 	// Query for both pending and completed chores
-	err := s.db.Preload("Chore").
+	err := s.db.Preload("Chore").Preload("Account").
 		Where("account_id = ? AND household_id = ?", accountId, householdId).
 		Where("(status = ? OR (status = ? AND completed_at BETWEEN ? AND ?))",
 			models.AssignmentStatusPending,
@@ -289,15 +287,16 @@ func (s *dbService) GetAccountChores(accountId uuid.UUID, householdId uuid.UUID)
 			ID:          ac.ID,
 			ChoreID:     ac.ChoreID,
 			AccountID:   ac.AccountID,
+			AccountName: ac.Account.Name,
 			DueDate:     ac.DueDate,
 			Status:      ac.Status,
 			CompletedAt: ac.CompletedAt,
+			Points:      ac.Points,
 			Chore: models.ChoreResponse{
 				ID:          ac.Chore.ID,
 				Title:       ac.Chore.Title,
 				Description: ac.Chore.Description,
 				Type:        ac.Chore.Type,
-				Status:      ac.Chore.Status,
 				HouseholdID: ac.Chore.HouseholdID,
 				CreatedAt:   ac.Chore.CreatedAt,
 			},
@@ -337,12 +336,12 @@ func (s *dbService) GetHouseholdChores(householdId uuid.UUID) ([]models.AccountC
 			DueDate:     ac.DueDate,
 			Status:      ac.Status,
 			CompletedAt: ac.CompletedAt,
+			Points:      ac.Points,
 			Chore: models.ChoreResponse{
 				ID:          ac.Chore.ID,
 				Title:       ac.Chore.Title,
 				Description: ac.Chore.Description,
 				Type:        ac.Chore.Type,
-				Status:      ac.Chore.Status,
 				HouseholdID: ac.Chore.HouseholdID,
 				CreatedAt:   ac.Chore.CreatedAt,
 			},
@@ -353,16 +352,26 @@ func (s *dbService) GetHouseholdChores(householdId uuid.UUID) ([]models.AccountC
 
 func (s *dbService) GetHouseholdLeaderboard(householdId uuid.UUID) ([]models.LeaderboardEntryResponse, error) {
 	var entries []struct {
-			AccountID   uuid.UUID
-			AccountName string
-			Points      uint
+		AccountID   uuid.UUID
+		AccountName string
+		TotalPoints uint
 	}
-	
-	err := s.db.Table("account_households").
-		Select("account_households.account_id, accounts.name as account_name, account_households.points").
-		Joins("JOIN accounts ON accounts.id = account_households.account_id").
-		Where("account_households.household_id = ?", householdId).
-		Order("account_households.points DESC").
+
+	// Get current month's start and end dates
+	now := time.Now()
+	currentMonthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	currentMonthEnd := currentMonthStart.AddDate(0, 1, 0).Add(-time.Second)
+
+	err := s.db.Table("account_chores").
+		Select("account_chores.account_id, accounts.name as account_name, COALESCE(SUM(account_chores.points), 0) as total_points").
+		Joins("JOIN accounts ON accounts.id = account_chores.account_id").
+		Where("account_chores.household_id = ? AND account_chores.status = ? AND account_chores.completed_at BETWEEN ? AND ?",
+			householdId,
+			models.AssignmentStatusCompleted,
+			currentMonthStart,
+			currentMonthEnd).
+		Group("account_chores.account_id, accounts.name").
+		Order("total_points DESC").
 		Scan(&entries).Error
 	
 	if err != nil {
@@ -374,7 +383,7 @@ func (s *dbService) GetHouseholdLeaderboard(householdId uuid.UUID) ([]models.Lea
 		response[i] = models.LeaderboardEntryResponse{
 			AccountID:   entry.AccountID,
 			AccountName: entry.AccountName,
-			Points:      entry.Points,
+			Points:      entry.TotalPoints,
 		}
 	}
 	return response, nil

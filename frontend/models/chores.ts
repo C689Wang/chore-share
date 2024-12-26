@@ -10,6 +10,7 @@ export interface CreateChoreParams {
   frequency?: FrequencyType; // Required for recurring
   schedule?: number[]; // Days of week for recurring (1-7 for Monday-Sunday)
   assigneeIds: string[]; // UUID strings
+  points: number;
 }
 
 export interface Chore {
@@ -30,6 +31,7 @@ export interface AccountChore {
   dueDate: Date;
   status: AssignmentStatus;
   completedAt?: Date;
+  points: number;
   chore: Chore;
 }
 

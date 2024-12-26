@@ -7,17 +7,11 @@ import (
 )
 
 type ChoreType string
-type ChoreStatus string
 type FrequencyType string
 
 const (
 	ChoreTypeOneTime    ChoreType = "ONE_TIME"
 	ChoreTypeRecurring  ChoreType = "RECURRING"
-
-	ChoreStatusPending   ChoreStatus = "PENDING"
-	ChoreStatusCompleted ChoreStatus = "COMPLETED"
-	ChoreStatusOverdue   ChoreStatus = "OVERDUE"
-	ChoreStatusPlanned   ChoreStatus = "PLANNED"
 
 	FrequencyTypeDaily    FrequencyType = "DAILY"
 	FrequencyTypeWeekly  FrequencyType = "WEEKLY"
@@ -31,8 +25,8 @@ type Chore struct {
 	Type          ChoreType    `gorm:"not null" json:"type"`
 	EndDate       time.Time   `json:"endDate"`    
 	FrequencyType *FrequencyType `json:"frequencyType"`
-	Status        ChoreStatus  `gorm:"not null; default:'ACTIVE'" json:"status"`
 	CreatedAt     time.Time    `gorm:"not null; default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt     time.Time    `gorm:"not null; default:CURRENT_TIMESTAMP" json:"updated_at"`
 	Household     Household    `gorm:"foreignKey:HouseholdID" json:"household"`
+	Points        int          `gorm:"not null" json:"points"`
 }

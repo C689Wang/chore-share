@@ -23,8 +23,9 @@ type AccountChore struct {
 	DueDate       time.Time        `gorm:"not null" json:"dueDate"`
 	CompletedAt   *time.Time       `json:"completedAt"`
 	Status        AssignmentStatus `gorm:"not null; default:'PENDING'" json:"status"`
-	RotationOrder int              `gorm:"not null" json:"rotationOrder"` 
+	RotationOrder int              `gorm:"not null" json:"rotationOrder"`
 	Chore         Chore            `gorm:"foreignKey:ChoreID"`
 	Account       Account          `gorm:"foreignKey:AccountID"`
 	Household     Household        `gorm:"foreignKey:HouseholdID"`
+	Points        int              `gorm:"not null" json:"points"`
 }
