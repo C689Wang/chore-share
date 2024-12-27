@@ -25,13 +25,13 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   owedTransaction: {
-    borderLeftColor: '#4CAF50',  // Green for money you're owed
+    borderLeftColor: '#4CAF50', // Green for money you're owed
   },
   owingTransaction: {
-    borderLeftColor: '#FF5252',  // Red for money you owe
+    borderLeftColor: '#FF5252', // Red for money you owe
   },
   settledTransaction: {
-    borderLeftColor: '#A5D6A7',  // Lighter green for settled transactions
+    borderLeftColor: '#A5D6A7', // Lighter green for settled transactions
     backgroundColor: '#F5F5F5',
   },
   transactionHeader: {

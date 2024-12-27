@@ -537,7 +537,7 @@ func (s *dbService) handleRecurringChoreCompletion(tx *gorm.DB, chore *models.Ch
 	nextAssignee := rotations[nextRotationOrder].AccountID
 
 	// Get the next occurrence date based on completion time
-	nextDate := s.calculateNextOccurrence(completedChore.DueDate, schedules)
+	nextDate := s.calculateNextOccurrence(completedChore.DueDate)
 
 	// Check if there's already a future assignment
 	var existingAssignment models.AccountChore
@@ -577,7 +577,7 @@ func (s *dbService) handleRecurringChoreCompletion(tx *gorm.DB, chore *models.Ch
 	return nil
 }
 
-func (s *dbService) calculateNextOccurrence(lastDueDate time.Time, schedules []models.ChoreSchedule) time.Time {	
+func (s *dbService) calculateNextOccurrence(lastDueDate time.Time) time.Time {	
 	// Add 7 days to get to the same weekday next week
 	nextDate := lastDueDate.AddDate(0, 0, 7)
 	
@@ -594,7 +594,7 @@ func (s *dbService) updateFutureAssignments(tx *gorm.DB, chore *models.Chore, co
 	}
 
 	// Calculate the new base date for the schedule
-	nextDate := s.calculateNextOccurrence(*completedChore.CompletedAt, schedules)
+	nextDate := s.calculateNextOccurrence(*completedChore.CompletedAt)
 
 	// First assignment should be pending, rest remain planned
 	for i, assignment := range futureAssignments {
@@ -606,7 +606,7 @@ func (s *dbService) updateFutureAssignments(tx *gorm.DB, chore *models.Chore, co
 			return err
 		}
 		// Calculate next date for subsequent assignments
-		nextDate = s.calculateNextOccurrence(nextDate, schedules)
+		nextDate = s.calculateNextOccurrence(nextDate)
 	}
 
 	return nil

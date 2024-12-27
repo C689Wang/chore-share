@@ -53,7 +53,8 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
     (state) => state.households.selectedHouseholdId
   );
   const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
-  const [isViewReviewModalVisible, setIsViewReviewModalVisible] = useState(false);
+  const [isViewReviewModalVisible, setIsViewReviewModalVisible] =
+    useState(false);
 
   const handleLayout = (event: LayoutChangeEvent) => {
     if (!notification.seen && onSeen) {
