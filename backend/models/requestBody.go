@@ -15,9 +15,9 @@ type CreateHouseholdRequestBody struct {
 }
 
 type JoinHouseholdRequestBody struct {
-	HouseholdID string `json:"household_id" binding:"required"`
+	HouseholdID string `json:"householdId" binding:"required"`
 	Password    string `json:"password" binding:"required"`
-	AccountID   string `json:"account_id" binding:"required"`
+	AccountID   string `json:"accountId" binding:"required"`
 }
 
 type CreateChoreRequestBody struct {

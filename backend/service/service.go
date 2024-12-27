@@ -24,11 +24,12 @@ type DBService interface {
 	GetHouseholdLeaderboard(householdId uuid.UUID) ([]models.LeaderboardEntryResponse, error)
 	GetHouseholdMembers(householdId uuid.UUID) ([]models.HouseholdMemberResponse, error)
 	CompleteChore(accountChoreId uuid.UUID) error
-	GetHouseholdTransactions(householdID uuid.UUID, month time.Time) ([]models.Transaction, error)
 	CreateTransaction(transaction *models.Transaction) error
 	GetTransactionSummary(accountID, householdID uuid.UUID, month time.Time) (models.TransactionSummary, error)
-	GetTransactionSplits(transactionID uuid.UUID) ([]models.TransactionSplit, error)
 	SettleTransactionSplit(splitID uuid.UUID) error
+	CreateNotification(notification *models.Notification, recipientIDs []uuid.UUID, householdID uuid.UUID) error
+	GetAccountNotifications(accountID uuid.UUID, householdID uuid.UUID) ([]models.NotificationResponse, error)
+	MarkNotificationAsSeen(accountID uuid.UUID, notificationID uuid.UUID) error
 }
 
 type dbService struct {
@@ -48,6 +49,11 @@ func NewDBService(connUrl string) DBService {
 		&models.AccountChore{},
 		&models.ChoreSchedule{},
 		&models.ChoreRotation{},
+		&models.Transaction{},
+		&models.TransactionSplit{},
+		&models.Notification{},
+		&models.AccountNotification{},
+		&models.ChoreReview{},
 	)
 	return &dbService{db: db}
 }
@@ -101,22 +107,25 @@ func (s *dbService) CreateChore(chore *models.Chore, assignees []uuid.UUID, sche
 		return err
 	}
 
+	var accountChoreID *uuid.UUID
+	
 	switch chore.Type {
 	case models.ChoreTypeOneTime:
 		// For one-time chores, create single AccountChore
 		if len(assignees) > 0 {
 			accountChore := models.AccountChore{
-				ChoreID:       chore.ID,
-				AccountID:     assignees[0],
-				HouseholdID:   chore.HouseholdID,
-				DueDate:       chore.EndDate,
-				Status:        models.AssignmentStatusPending,
-				Points:        chore.Points,
+				ChoreID:     chore.ID,
+				AccountID:   assignees[0],
+				HouseholdID: chore.HouseholdID,
+				DueDate:     chore.EndDate,
+				Status:      models.AssignmentStatusPending,
+				Points:      chore.Points,
 			}
 			if err := tx.Create(&accountChore).Error; err != nil {
 				tx.Rollback()
 				return err
 			}
+			accountChoreID = &accountChore.ID
 		}
 
 	case models.ChoreTypeRecurring:
@@ -143,21 +152,48 @@ func (s *dbService) CreateChore(chore *models.Chore, assignees []uuid.UUID, sche
 			}
 		}
 
-		// Generate initial assignments
-		if err := s.generateInitialAssignments(tx, chore, assignees); err != nil {
+		// Generate initial assignments and get first assignment ID
+		firstAssignmentID, err := s.generateInitialAssignments(tx, chore, assignees)
+		if err != nil {
 			tx.Rollback()
 			return err
 		}
+		accountChoreID = firstAssignmentID
 	}
 
-	return tx.Commit().Error
+	// Commit the transaction first
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	// Now create notification in a separate transaction
+	notification := &models.Notification{
+		Action:         models.NotificationActionChoreAssigned,
+		AccountID:      assignees[0],
+		ChoreID:        &chore.ID,
+		AccountChoreID: accountChoreID,
+	}
+
+	// Get household members for notifications
+	var householdMembers []uuid.UUID
+	if err := s.db.Model(&models.AccountHousehold{}).
+		Where("household_id = ?", chore.HouseholdID).
+		Pluck("account_id", &householdMembers).Error; err != nil {
+		return err
+	}
+
+	if err := s.CreateNotification(notification, householdMembers, chore.HouseholdID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore, assignees []uuid.UUID) error {
+func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore, assignees []uuid.UUID) (*uuid.UUID, error) {
 	// Get the schedule
 	var schedules []models.ChoreSchedule
 	if err := tx.Where("chore_id = ?", chore.ID).Find(&schedules).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	// Generate assignments for next week only
@@ -165,6 +201,8 @@ func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore,
 	endDate := startDate.AddDate(0, 0, 7)
 	assigneeIndex := 0
 	isFirstAssignment := true
+
+	var firstAssignmentID *uuid.UUID
 
 	for date := startDate; date.Before(endDate); date = date.AddDate(0, 0, 1) {
 		weekday := int(date.Weekday())
@@ -196,14 +234,20 @@ func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore,
 				}
 
 				if err := tx.Create(&accountChore).Error; err != nil {
-					return err
+					return nil, err
+				}
+
+				if isFirstAssignment {
+					firstAssignmentID = &accountChore.ID
+					isFirstAssignment = false
 				}
 
 				assigneeIndex = (assigneeIndex + 1) % len(assignees)
 			}
 		}
 	}
-	return nil
+
+	return firstAssignmentID, nil
 }
 
 
@@ -421,18 +465,33 @@ func (s *dbService) CompleteChore(accountChoreId uuid.UUID) error {
 		return tx.Error
 	}
 
-	// Find the current chore assignment
+	// Get the account chore with related data
 	var accountChore models.AccountChore
-	if err := tx.Where("id = ? AND status = ?", 
-		accountChoreId, models.AssignmentStatusPending).
+	if err := tx.Preload("Account").Preload("Chore").
+		Where("id = ? AND status = ?", accountChoreId, models.AssignmentStatusPending).
 		First(&accountChore).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Get the associated chore to check if it's recurring
-	var chore models.Chore
-	if err := tx.First(&chore, accountChore.ChoreID).Error; err != nil {
+	// Get household members for notification
+	var householdMembers []uuid.UUID
+	if err := tx.Model(&models.AccountHousehold{}).
+		Where("household_id = ?", accountChore.HouseholdID).
+		Pluck("account_id", &householdMembers).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Create completion notification
+	notification := &models.Notification{
+		Action:         models.NotificationActionChoreCompleted,
+		AccountID:      accountChore.AccountID,
+		ChoreID:        &accountChore.ChoreID,
+		AccountChoreID: &accountChore.ID,
+	}
+
+	if err := s.CreateNotification(notification, householdMembers, accountChore.HouseholdID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -446,9 +505,9 @@ func (s *dbService) CompleteChore(accountChoreId uuid.UUID) error {
 		return err
 	}
 
-	if chore.Type == models.ChoreTypeRecurring {
+	if accountChore.Chore.Type == models.ChoreTypeRecurring {
 		// Handle recurring chore logic
-		if err := s.handleRecurringChoreCompletion(tx, &chore, &accountChore); err != nil {
+		if err := s.handleRecurringChoreCompletion(tx, &accountChore.Chore, &accountChore); err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -550,21 +609,6 @@ func (s *dbService) updateFutureAssignments(tx *gorm.DB, chore *models.Chore, co
 	return nil
 }
 
-func (s *dbService) GetHouseholdTransactions(householdID uuid.UUID, month time.Time) ([]models.Transaction, error) {
-	var transactions []models.Transaction
-	
-	// Get start and end of month
-	startOfMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
-	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Second)
-	
-	err := s.db.Where("household_id = ? AND spent_at BETWEEN ? AND ?", 
-		householdID, startOfMonth, endOfMonth).
-		Order("spent_at DESC").
-		Find(&transactions).Error
-	
-	return transactions, err
-}
-
 func (s *dbService) CreateTransaction(transaction *models.Transaction) error {
 	tx := s.db.Begin()
 	if err := tx.Create(transaction).Error; err != nil {
@@ -572,18 +616,29 @@ func (s *dbService) CreateTransaction(transaction *models.Transaction) error {
 		return err
 	}
 
-	// Get household members
-	var members []models.Account
-	if err := tx.Model(&models.Account{}).
-		Joins("JOIN account_households ON accounts.id = account_households.account_id").
-		Where("account_households.household_id = ?", transaction.HouseholdID).
-		Find(&members).Error; err != nil {
+	// Get household members for notification
+	var householdMembers []uuid.UUID
+	if err := tx.Model(&models.AccountHousehold{}).
+		Where("household_id = ?", transaction.HouseholdID).
+		Pluck("account_id", &householdMembers).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Create transaction notification
+	notification := &models.Notification{
+		Action:        models.NotificationActionTransactionAdded,
+		AccountID:     transaction.PaidByID,
+		TransactionID: &transaction.ID,
+	}
+
+	if err := s.CreateNotification(notification, householdMembers, transaction.HouseholdID); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Calculate split amount (including the payer)
-	splitCount := len(members)
+	splitCount := len(householdMembers)
 	if splitCount == 0 {
 		tx.Rollback()
 		return errors.New("no other members to split with")
@@ -592,14 +647,14 @@ func (s *dbService) CreateTransaction(transaction *models.Transaction) error {
 	amountPerPerson := transaction.AmountInCents / int64(splitCount)
 
 	// Create splits for each member except the payer
-	for _, member := range members {
-		if member.ID == transaction.PaidByID {
+	for _, member := range householdMembers {
+		if member == transaction.PaidByID {
 			continue
 		}
 
 		split := models.TransactionSplit{
 			TransactionID: transaction.ID,
-			OwedByID:     member.ID,
+			OwedByID:     member,
 			OwedToID:     transaction.PaidByID,
 			AmountInCents: amountPerPerson,  // Each person owes their share
 			IsSettled:    false,
@@ -614,97 +669,279 @@ func (s *dbService) CreateTransaction(transaction *models.Transaction) error {
 	return tx.Commit().Error
 }
 
-func (s *dbService) GetTransactionSummary(accountID, householdID uuid.UUID, month time.Time) (models.TransactionSummary, error) {
+func (s *dbService) GetTransactionSummary(accountID uuid.UUID, householdID uuid.UUID, month time.Time) (models.TransactionSummary, error) {
 	startOfMonth := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
-	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Second)
+	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
 	
 	var summary models.TransactionSummary
 	summary.Month = month
+	summary.OwedDetails = []models.TransactionOwedDetail{}
+	summary.OwingDetails = []models.TransactionOwingDetail{}
+	summary.TotalOwed = 0
+	summary.TotalOwing = 0
 
-	// Calculate total owed to user
-	err := s.db.Model(&models.TransactionSplit{}).
-		Select("COALESCE(SUM(amount_in_cents), 0)").
-		Where("owed_to_id = ? AND is_settled = ? AND transaction_id IN (?)",
-			accountID, false,
-			s.db.Model(&models.Transaction{}).
-				Select("id").
-				Where("household_id = ? AND spent_at BETWEEN ? AND ?",
-					householdID, startOfMonth, endOfMonth)).
-		Scan(&summary.TotalOwed).Error
+	// Get all splits for the user (both owed and owing)
+	var splits []models.TransactionSplit
+	err := s.db.Where("(owed_by_id = ? OR owed_to_id = ?) AND transaction_id IN (?)",
+		accountID, accountID,
+		s.db.Model(&models.Transaction{}).
+			Select("id").
+			Where("household_id = ? AND spent_at BETWEEN ? AND ?",
+				householdID, startOfMonth, endOfMonth)).
+		Preload("Transaction").
+		Preload("OwedBy").
+		Preload("OwedTo").
+		Find(&splits).Error
 	if err != nil {
 		return summary, err
 	}
 
-	// Calculate total owing by user
-	err = s.db.Model(&models.TransactionSplit{}).
-		Select("COALESCE(SUM(amount_in_cents), 0)").
-		Where("owed_by_id = ? AND is_settled = ? AND transaction_id IN (?)",
-			accountID, false,
-			s.db.Model(&models.Transaction{}).
-				Select("id").
-				Where("household_id = ? AND spent_at BETWEEN ? AND ?",
-					householdID, startOfMonth, endOfMonth)).
-		Scan(&summary.TotalOwing).Error
-	if err != nil {
-		return summary, err
+	// Process splits into summary
+	for _, split := range splits {
+		if split.OwedToID == accountID && !split.IsSettled {
+			summary.TotalOwed += split.AmountInCents
+			found := false
+			for i, detail := range summary.OwedDetails {
+				if detail.OwedByID == split.OwedByID {
+					summary.OwedDetails[i].AmountInCents += split.AmountInCents
+					summary.OwedDetails[i].Splits = append(summary.OwedDetails[i].Splits, models.TransactionSplitResponse{
+						ID:            split.ID,
+						TransactionID: split.TransactionID,
+						Description:   split.Transaction.Description,
+						SpentAt:      split.Transaction.SpentAt,
+						OwedByID:      split.OwedByID,
+						OwedToID:      split.OwedToID,
+						AmountInCents: split.AmountInCents,
+						IsSettled:     split.IsSettled,
+						SettledAt:     split.SettledAt,
+						OwedBy: models.TransactionMemberResponse{
+							ID:   split.OwedBy.ID,
+							Name: split.OwedBy.Name,
+						},
+						OwedTo: models.TransactionMemberResponse{
+							ID:   split.OwedTo.ID,
+							Name: split.OwedTo.Name,
+						},
+					})
+					found = true
+					break
+				}
+			}
+			if !found {
+				summary.OwedDetails = append(summary.OwedDetails, models.TransactionOwedDetail{
+					OwedByID:      split.OwedByID,
+					OwedByName:    split.OwedBy.Name,
+					AmountInCents: split.AmountInCents,
+					Splits: []models.TransactionSplitResponse{{
+						ID:            split.ID,
+						TransactionID: split.TransactionID,
+						Description:   split.Transaction.Description,
+						SpentAt:      split.Transaction.SpentAt,
+						OwedByID:      split.OwedByID,
+						OwedToID:      split.OwedToID,
+						AmountInCents: split.AmountInCents,
+						IsSettled:     split.IsSettled,
+						SettledAt:     split.SettledAt,
+						OwedBy: models.TransactionMemberResponse{
+							ID:   split.OwedBy.ID,
+							Name: split.OwedBy.Name,
+						},
+						OwedTo: models.TransactionMemberResponse{
+							ID:   split.OwedTo.ID,
+							Name: split.OwedTo.Name,
+						},
+					}},
+				})
+			}
+		} else if split.OwedByID == accountID && !split.IsSettled {
+			summary.TotalOwing += split.AmountInCents
+			found := false
+			for i, detail := range summary.OwingDetails {
+				if detail.OwedToID == split.OwedToID {
+					summary.OwingDetails[i].AmountInCents += split.AmountInCents
+					summary.OwingDetails[i].Splits = append(summary.OwingDetails[i].Splits, models.TransactionSplitResponse{
+						ID:            split.ID,
+						TransactionID: split.TransactionID,
+						Description:   split.Transaction.Description,
+						SpentAt:      split.Transaction.SpentAt,
+						OwedByID:      split.OwedByID,
+						OwedToID:      split.OwedToID,
+						AmountInCents: split.AmountInCents,
+						IsSettled:     split.IsSettled,
+						SettledAt:     split.SettledAt,
+						OwedBy: models.TransactionMemberResponse{
+							ID:   split.OwedBy.ID,
+							Name: split.OwedBy.Name,
+						},
+						OwedTo: models.TransactionMemberResponse{
+							ID:   split.OwedTo.ID,
+							Name: split.OwedTo.Name,
+						},
+					})
+					found = true
+					break
+				}
+			}
+			if !found {
+				summary.OwingDetails = append(summary.OwingDetails, models.TransactionOwingDetail{
+					OwedToID:      split.OwedToID,
+					OwedToName:    split.OwedTo.Name,
+					AmountInCents: split.AmountInCents,
+					Splits: []models.TransactionSplitResponse{{
+						ID:            split.ID,
+						TransactionID: split.TransactionID,
+						Description:   split.Transaction.Description,
+						SpentAt:      split.Transaction.SpentAt,
+						OwedByID:      split.OwedByID,
+						OwedToID:      split.OwedToID,
+						AmountInCents: split.AmountInCents,
+							IsSettled:     split.IsSettled,
+							SettledAt:     split.SettledAt,
+							OwedBy: models.TransactionMemberResponse{
+								ID:   split.OwedBy.ID,
+								Name: split.OwedBy.Name,
+							},
+							OwedTo: models.TransactionMemberResponse{
+								ID:   split.OwedTo.ID,
+								Name: split.OwedTo.Name,
+							},
+					}},
+				})
+			}
+		}
 	}
-
-	// Get detailed breakdown of who owes the user
-	var owedDetails []models.TransactionOwedDetail
-	err = s.db.Model(&models.TransactionSplit{}).
-		Select("owed_by_id, accounts.name as owed_by_name, SUM(amount_in_cents) as amount_in_cents").
-		Joins("JOIN accounts ON accounts.id = transaction_splits.owed_by_id").
-		Where("owed_to_id = ? AND is_settled = ? AND transaction_id IN (?)",
-			accountID, false,
-			s.db.Model(&models.Transaction{}).
-				Select("id").
-				Where("household_id = ? AND spent_at BETWEEN ? AND ?",
-					householdID, startOfMonth, endOfMonth)).
-		Group("owed_by_id, accounts.name").
-		Scan(&owedDetails).Error
-	if err != nil {
-		return summary, err
-	}
-	summary.OwedDetails = owedDetails
-
-	// Get detailed breakdown of what user owes to others
-	var owingDetails []models.TransactionOwingDetail
-	err = s.db.Model(&models.TransactionSplit{}).
-		Select("owed_to_id, accounts.name as owed_to_name, SUM(amount_in_cents) as amount_in_cents").
-		Joins("JOIN accounts ON accounts.id = transaction_splits.owed_to_id").
-		Where("owed_by_id = ? AND is_settled = ? AND transaction_id IN (?)",
-			accountID, false,
-			s.db.Model(&models.Transaction{}).
-				Select("id").
-				Where("household_id = ? AND spent_at BETWEEN ? AND ?",
-					householdID, startOfMonth, endOfMonth)).
-		Group("owed_to_id, accounts.name").
-		Scan(&owingDetails).Error
-	if err != nil {
-		return summary, err
-	}
-	summary.OwingDetails = owingDetails
 
 	return summary, nil
 }
 
-func (s *dbService) GetTransactionSplits(transactionID uuid.UUID) ([]models.TransactionSplit, error) {
-	var splits []models.TransactionSplit
-	err := s.db.Where("transaction_id = ?", transactionID).
-		Preload("Transaction").
-		Find(&splits).Error
-	return splits, err
-}
-
 func (s *dbService) SettleTransactionSplit(splitID uuid.UUID) error {
+	tx := s.db.Begin()
+	
 	var split models.TransactionSplit
-	err := s.db.Where("id = ?", splitID).First(&split).Error
-	if err != nil {
+	if err := tx.Preload("Transaction").
+		Where("id = ?", splitID).First(&split).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	split.IsSettled = true
-	split.SettledAt = &time.Time{}
+	now := time.Now()
+	split.SettledAt = &now
 
-	return s.db.Save(&split).Error
+	if err := tx.Save(&split).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Only notify the person who paid (OwedTo) when someone settles
+	notification := &models.Notification{
+		Action:        models.NotificationActionTransactionSettled,
+		AccountID:     split.OwedByID,  // person who settled
+		TransactionID: &split.TransactionID,
+	}
+
+	// Only notify the person who is owed the money
+	if err := s.CreateNotification(notification, []uuid.UUID{split.OwedToID}, split.Transaction.HouseholdID); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+func (s *dbService) CreateNotification(notification *models.Notification, recipientIDs []uuid.UUID, householdID uuid.UUID) error {
+	tx := s.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	notification.HouseholdID = householdID
+
+	if err := tx.Create(notification).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Create AccountNotification for each recipient
+	for _, recipientID := range recipientIDs {
+		accountNotification := models.AccountNotification{
+			NotificationID: notification.ID,
+			AccountID:     recipientID,
+			HouseholdID:   householdID,
+			Seen:          false,
+		}
+		if err := tx.Create(&accountNotification).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit().Error
+}
+
+func (s *dbService) GetAccountNotifications(accountID uuid.UUID, householdID uuid.UUID) ([]models.NotificationResponse, error) {
+	var accountNotifications []models.AccountNotification
+	err := s.db.Where("account_id = ? AND household_id = ?", accountID, householdID).
+		Preload("Notification.Account").
+		Preload("Notification.AccountChore.Chore").
+		Preload("Notification.Transaction").
+		Preload("Notification.Review").
+		Order("created_at DESC").
+		Find(&accountNotifications).Error
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]models.NotificationResponse, len(accountNotifications))
+	for i, an := range accountNotifications {
+		notif := an.Notification
+		response[i] = models.NotificationResponse{
+			ID:        an.ID,
+			Seen:      an.Seen,
+			CreatedAt: an.CreatedAt,
+			Action:    notif.Action,
+			Actor: models.ActorInfo{
+				ID:   notif.Account.ID,
+				Name: notif.Account.Name,
+			},
+		}
+
+		// Add type-specific information
+		switch notif.Action {
+		case models.NotificationActionChoreAssigned, 
+			 models.NotificationActionChorePending,
+			 models.NotificationActionChoreCompleted:
+			if notif.AccountChore.ID != uuid.Nil {
+				response[i].ChoreInfo = &models.ChoreInfo{
+					ChoreID:        notif.AccountChore.ChoreID,
+					AccountChoreID: notif.AccountChore.ID,
+					Title:          notif.AccountChore.Chore.Title,
+					DueDate:        notif.AccountChore.DueDate,
+				}
+			}
+		case models.NotificationActionReviewSubmitted:
+			if notif.Review.ID != uuid.Nil {
+				response[i].ReviewInfo = &models.ReviewInfo{
+					ReviewID: notif.Review.ID,
+					Review:   notif.Review.Review,
+				}
+			}
+		case models.NotificationActionTransactionAdded,
+			 models.NotificationActionTransactionSettled:
+			if notif.Transaction.ID != uuid.Nil {
+				response[i].Transaction = &models.TransactionInfo{
+					TransactionID:  notif.Transaction.ID,
+					Description:    notif.Transaction.Description,
+					AmountInCents: notif.Transaction.AmountInCents,
+				}
+			}
+		}
+	}
+	return response, nil
+}
+
+func (s *dbService) MarkNotificationAsSeen(accountID uuid.UUID, notificationID uuid.UUID) error {
+	return s.db.Model(&models.AccountNotification{}).
+		Where("account_id = ? AND notification_id = ?", accountID, notificationID).
+		Update("seen", true).Error
 }

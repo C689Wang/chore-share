@@ -27,10 +27,10 @@ export const householdsApi = api.injectEndpoints({
 
     joinHousehold: builder.mutation<
       void,
-      { householdID: string; accountID: string; password: string }
+      { householdId: string; accountId: string; password: string }
     >({
       query: (body) => ({
-        url: '/households/join',
+        url: `/accounts/${body.accountId}/households/join`,
         method: 'POST',
         body,
       }),

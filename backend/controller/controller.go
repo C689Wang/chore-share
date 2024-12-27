@@ -183,7 +183,7 @@ func (c *Controller) JoinHousehold(ctx *gin.Context) {
 		return
 	}
 
-	accountId, err := uuid.Parse(body.AccountID)
+	accountId, err := uuid.Parse(ctx.Param("accountId"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -303,77 +303,6 @@ func (c *Controller) CompleteChore(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Chore completed successfully"})
 }
 
-func (c *Controller) GetTransactions(ctx *gin.Context) {
-	householdUUID := ctx.Param("householdId")
-	householdId, err := uuid.Parse(householdUUID)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Parse month from query params, default to current month if not provided
-	monthStr := ctx.DefaultQuery("month", time.Now().Format("2006-01"))
-	month, err := time.Parse("2006-01", monthStr)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid month format. Use YYYY-MM"})
-		return
-	}
-
-	transactions, err := c.service.GetHouseholdTransactions(householdId, month)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, transactions)
-}
-
-func (c *Controller) GetTransactionSummary(ctx *gin.Context) {
-	accountUUID := ctx.Param("accountId")
-	accountId, err := uuid.Parse(accountUUID)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	householdUUID := ctx.Param("householdId")
-	householdId, err := uuid.Parse(householdUUID)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Parse month from query params, default to current month if not provided
-	monthStr := ctx.DefaultQuery("month", time.Now().Format("2006-01"))
-	month, err := time.Parse("2006-01", monthStr)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid month format. Use YYYY-MM"})
-		return
-	}
-
-	summary, err := c.service.GetTransactionSummary(accountId, householdId, month)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, summary)
-}
-
-func (c *Controller) GetTransactionSplits(ctx *gin.Context) {
-	transactionUUID := ctx.Param("transactionId")
-	transactionId, err := uuid.Parse(transactionUUID)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	splits, err := c.service.GetTransactionSplits(transactionId)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, splits)
-}
-
 func (c *Controller) SettleTransactionSplit(ctx *gin.Context) {
 	splitUUID := ctx.Param("splitId")
 	splitId, err := uuid.Parse(splitUUID)
@@ -397,23 +326,21 @@ func (c *Controller) CreateTransaction(ctx *gin.Context) {
 		return
 	}
 
-	householdUUID := ctx.Param("householdId")
-	householdId, err := uuid.Parse(householdUUID)
+	householdID, err := uuid.Parse(ctx.Param("householdId"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	accountUUID := ctx.Param("accountId")
-	accountId, err := uuid.Parse(accountUUID)
+	accountID, err := uuid.Parse(ctx.Param("accountId"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	transaction := models.Transaction{
-		HouseholdID: householdId,
-		PaidByID:    accountId,
+		HouseholdID: householdID,
+		PaidByID:    accountID,
 		AmountInCents: body.AmountInCents,
 		Description: body.Description,
 		SpentAt:     body.SpentAt,
@@ -426,4 +353,77 @@ func (c *Controller) CreateTransaction(ctx *gin.Context) {
 	}
 	
 	ctx.JSON(http.StatusOK, gin.H{"message": "Transaction created successfully"})
+}
+
+func (c *Controller) GetTransactionSummary(ctx *gin.Context) {
+	accountID, err := uuid.Parse(ctx.Param("accountId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	householdID, err := uuid.Parse(ctx.Param("householdId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid household ID"})
+		return
+	}
+
+	// Parse month from query params, default to current month if not provided
+	monthStr := ctx.DefaultQuery("month", time.Now().Format("2006-01"))
+	month, err := time.Parse("2006-01", monthStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid month format. Use YYYY-MM"})
+		return
+	}
+
+	summary, err := c.service.GetTransactionSummary(accountID, householdID, month)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, summary)
+}
+
+func (c *Controller) GetNotifications(ctx *gin.Context) {
+	accountID, err := uuid.Parse(ctx.Param("accountId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	householdID, err := uuid.Parse(ctx.Param("householdId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	notifications, err := c.service.GetAccountNotifications(accountID, householdID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, notifications)
+}
+
+func (c *Controller) MarkNotificationAsSeen(ctx *gin.Context) {
+	accountID, err := uuid.Parse(ctx.Param("accountId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	notificationID, err := uuid.Parse(ctx.Param("notificationId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := c.service.MarkNotificationAsSeen(accountID, notificationID); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Notification marked as seen"})
 }
