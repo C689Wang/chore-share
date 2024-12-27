@@ -5,12 +5,16 @@ import {
   NotificationResponse,
   NotificationAction,
 } from '@/models/notifications';
+import { useMarkNotificationsAsSeenMutation } from '@/store/notificationsApi';
+import { useAppSelector } from '@/store/hooks';
 import Avatar from './Avatar';
 import ReviewModal from './ReviewModal';
+import ViewReviewModal from './ViewReviewModal';
 import { useAuth } from '@/context/auth';
 
 interface NotificationCardProps {
   notification: NotificationResponse;
+  onSeen?: (notificationId: string) => void;
 }
 
 const getActionText = (action: NotificationAction): string => {
@@ -26,7 +30,7 @@ const getActionText = (action: NotificationAction): string => {
     case NotificationAction.TRANSACTION_SETTLED:
       return 'settled a transaction';
     case NotificationAction.REVIEW_SUBMITTED:
-      return 'submitted a review';
+      return 'submitted a review for';
     default:
       return (action as string).toLowerCase();
   }
@@ -42,14 +46,18 @@ const formatDate = (date: string): string => {
 
 const NotificationCard: React.FC<NotificationCardProps> = ({
   notification,
+  onSeen,
 }) => {
   const { user } = useAuth();
+  const selectedHouseholdId = useAppSelector(
+    (state) => state.households.selectedHouseholdId
+  );
   const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
+  const [isViewReviewModalVisible, setIsViewReviewModalVisible] = useState(false);
 
   const handleLayout = (event: LayoutChangeEvent) => {
-    if (!notification.seen) {
-      // Call your API to mark as seen
-      // You can implement this using your API client
+    if (!notification.seen && onSeen) {
+      onSeen(notification.id);
     }
   };
 
@@ -61,15 +69,29 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
       return notification.transactionInfo.description;
     }
     if (notification.reviewInfo) {
-      return notification.reviewInfo.review;
+      return notification.reviewInfo.choreName;
+    }
+    if (notification.splitInfo) {
+      return notification.splitInfo.description;
     }
     return '';
   };
 
-  const showReviewButton = 
-    notification.action === NotificationAction.CHORE_COMPLETED && 
+  const getSplitInfo = () => {
+    if (notification.splitInfo) {
+      return ` from ${notification.splitInfo.owedByName}`;
+    }
+    return '';
+  };
+
+  const showReviewButton =
+    notification.action === NotificationAction.CHORE_COMPLETED &&
     notification.actor.id !== user?.id &&
     notification.choreInfo;
+
+  const showViewReviewButton =
+    notification.action === NotificationAction.REVIEW_SUBMITTED &&
+    notification.reviewInfo;
 
   return (
     <View style={styles.container} onLayout={handleLayout}>
@@ -78,30 +100,50 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
         <View style={styles.textRow}>
           <Text style={styles.textName}>{notification.actor.name}</Text>
           <Text style={styles.textAction}>
-            {' '}
             {getActionText(notification.action as NotificationAction)}
           </Text>
         </View>
-        <Text style={styles.textChore}>{getNotificationContent()}</Text>
+        <Text style={styles.textChore} numberOfLines={2}>
+          {getNotificationContent()}
+          {getSplitInfo()}
+        </Text>
         <Text style={styles.textDate}>
           {formatDate(notification.createdAt)}
         </Text>
       </View>
-      {showReviewButton && (
-        <>
-          <TouchableOpacity 
-            style={styles.reviewButton}
-            onPress={() => setIsReviewModalVisible(true)}
-          >
-            <Text style={{ color: 'blue' }}>Review</Text>
-          </TouchableOpacity>
-          <ReviewModal
-            isVisible={isReviewModalVisible}
-            onClose={() => setIsReviewModalVisible(false)}
-            accountChoreId={notification.choreInfo!.accountChoreId}
-          />
-        </>
-      )}
+      <View style={styles.buttonContainer}>
+        {showReviewButton && (
+          <>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setIsReviewModalVisible(true)}
+            >
+              <Text style={styles.actionButtonText}>Review</Text>
+            </TouchableOpacity>
+            <ReviewModal
+              isVisible={isReviewModalVisible}
+              onClose={() => setIsReviewModalVisible(false)}
+              accountChoreId={notification.choreInfo!.accountChoreId}
+            />
+          </>
+        )}
+        {showViewReviewButton && notification.reviewInfo && (
+          <>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setIsViewReviewModalVisible(true)}
+            >
+              <Text style={styles.actionButtonText}>View</Text>
+            </TouchableOpacity>
+            <ViewReviewModal
+              isVisible={isViewReviewModalVisible}
+              onClose={() => setIsViewReviewModalVisible(false)}
+              reviewId={notification.reviewInfo.reviewId}
+              accountChoreId={notification.reviewInfo.accountChoreId}
+            />
+          </>
+        )}
+      </View>
     </View>
   );
 };

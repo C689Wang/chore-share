@@ -1,24 +1,6 @@
 import { api } from './api';
 import { NotificationResponse } from '@/models/notifications';
 
-export type Emotion = 'HAPPY' | 'NEUTRAL' | 'UPSET' | 'MAD';
-
-export interface CreateReviewRequest {
-  accountChoreId: string;
-  reviewerId: string;
-  review: string;
-  emotion: Emotion;
-}
-
-export interface ReviewResponse {
-  id: string;
-  accountChoreId: string;
-  reviewerId: string;
-  review: string;
-  emotion: Emotion;
-  createdAt: string;
-}
-
 export const notificationsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getAccountNotifications: builder.query<
@@ -45,13 +27,16 @@ export const notificationsApi = api.injectEndpoints({
       invalidatesTags: ['Notification'],
     }),
 
-    createReview: builder.mutation<ReviewResponse, CreateReviewRequest>({
-      query: (body) => ({
-        url: `/chores/${body.accountChoreId}/reviews`,
-        method: 'POST',
-        body,
+    markNotificationsAsSeen: builder.mutation<
+      void,
+      { accountId: string; householdId: string; notificationIds: string[] }
+    >({
+      query: ({ accountId, householdId, notificationIds }) => ({
+        url: `/accounts/${accountId}/households/${householdId}/notifications/seen`,
+        method: 'PUT',
+        body: { notificationIds },
       }),
-      invalidatesTags: ['Notification', 'Chore'],
+      invalidatesTags: ['Notification'],
     }),
   }),
 });
@@ -59,5 +44,5 @@ export const notificationsApi = api.injectEndpoints({
 export const {
   useGetAccountNotificationsQuery,
   useMarkNotificationSeenMutation,
-  useCreateReviewMutation,
+  useMarkNotificationsAsSeenMutation,
 } = notificationsApi;

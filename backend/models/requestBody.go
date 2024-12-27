@@ -36,3 +36,8 @@ type CreateTransactionRequestBody struct {
 	AmountInCents int64     `json:"amountInCents"`
 	SpentAt       time.Time `json:"spentAt"`
 }
+
+type CreateChoreReviewRequestBody struct {
+	ReviewerStatus 	string `json:"reviewerStatus" binding:"required"`
+	ReviewerComment string `json:"reviewerComment"`
+}

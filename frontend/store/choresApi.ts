@@ -1,5 +1,10 @@
 import { api } from './api';
 import type { AccountChore, CreateChoreParams } from '../models/chores';
+import {
+  ReviewResponse,
+  CreateReviewRequest,
+  ChoreReviewResponse,
+} from '@/models/reviews';
 
 export const choresApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -58,6 +63,38 @@ export const choresApi = api.injectEndpoints({
         { type: 'Household', id: `${householdId}-leaderboard` },
       ],
     }),
+
+    createReview: builder.mutation<
+      ReviewResponse,
+      {
+        accountChoreId: string;
+        reviewerId: string;
+        householdId: string;
+        body: CreateReviewRequest;
+      }
+    >({
+      query: ({ accountChoreId, reviewerId, householdId, body }) => ({
+        url: `/accounts/${reviewerId}/households/${householdId}/chores/${accountChoreId}/reviews`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Notification', 'Chore'],
+    }),
+
+    getChoreReview: builder.query<
+      ChoreReviewResponse,
+      {
+        accountId: string;
+        householdId: string;
+        accountChoreId: string;
+        reviewId: string;
+      }
+    >({
+      query: ({ accountId, householdId, accountChoreId, reviewId }) => ({
+        url: `/accounts/${accountId}/households/${householdId}/chores/${accountChoreId}/reviews/${reviewId}`,
+        method: 'GET',
+      }),
+    }),
   }),
 });
 
@@ -66,4 +103,6 @@ export const {
   useGetAccountChoresQuery,
   useCreateChoreMutation,
   useToggleChoreCompletionMutation,
+  useCreateReviewMutation,
+  useGetChoreReviewQuery,
 } = choresApi;

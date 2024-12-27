@@ -8,8 +8,9 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useAuth } from '@/context/auth';
-import { useCreateReviewMutation } from '@/store/notificationsApi';
-import type { Emotion } from '@/store/notificationsApi';
+import { useCreateReviewMutation } from '@/store/choresApi';
+import type { Emotion } from '@/models/reviews';
+import { useAppSelector } from '@/store/hooks';
 
 interface ReviewModalProps {
   isVisible: boolean;
@@ -30,6 +31,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   accountChoreId,
 }) => {
   const { user } = useAuth();
+  const selectedHouseholdId = useAppSelector(
+    (state) => state.households.selectedHouseholdId
+  );
   const [review, setReview] = useState('');
   const [emotion, setEmotion] = useState<Emotion>('NEUTRAL');
   const [createReview] = useCreateReviewMutation();
@@ -39,8 +43,11 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       await createReview({
         accountChoreId,
         reviewerId: user?.id ?? '',
-        review,
-        emotion,
+        householdId: selectedHouseholdId ?? '',
+        body: {
+          reviewerStatus: emotion,
+          reviewerComment: review,
+        },
       }).unwrap();
       onClose();
     } catch (error) {
@@ -52,13 +59,13 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     <Modal
       visible={isVisible}
       transparent
-      animationType="slide"
+      animationType='slide'
       onRequestClose={onClose}
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>Review Chore</Text>
-          
+
           <View style={styles.emotionsContainer}>
             {EMOTIONS.map((item) => (
               <TouchableOpacity
@@ -77,7 +84,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
           <TextInput
             style={styles.input}
-            placeholder="Write your review..."
+            placeholder='Write your review...'
             value={review}
             onChangeText={setReview}
             multiline
@@ -183,4 +190,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ReviewModal; 
+export default ReviewModal;

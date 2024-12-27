@@ -41,8 +41,11 @@ func main() {
 	r.PUT("/api/accounts/:accountId/households/:householdId/chores/:accountChoreId/complete", controller.CompleteChore)
 	r.POST("/api/accounts/:accountId/households/:householdId/transactions", controller.CreateTransaction)
 	r.GET("/api/accounts/:accountId/households/:householdId/transactions/summary", controller.GetTransactionSummary)
-	r.PUT("/api/accounts/:accountId/households/:householdId/transactions/:transactionSplitId/settle", controller.SettleTransactionSplit)
+	r.PUT("/api/accounts/:accountId/households/:householdId/transactions/:splitId/settle", controller.SettleTransactionSplit)
 	r.GET("/api/accounts/:accountId/households/:householdId/notifications", controller.GetNotifications)
 	r.PUT("/api/accounts/:accountId/households/:householdId/notifications/:notificationId/seen", controller.MarkNotificationAsSeen)
+	r.PUT("/api/accounts/:accountId/households/:householdId/notifications/seen", controller.MarkNotificationsAsSeen)
+	r.POST("/api/accounts/:accountId/households/:householdId/chores/:accountChoreId/reviews", controller.CreateChoreReview)
+	r.GET("/api/accounts/:accountId/households/:householdId/chores/:accountChoreId/reviews/:reviewId", controller.GetChoreReview)
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
