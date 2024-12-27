@@ -36,9 +36,10 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
     // Group chores by due date
     const grouped = sortedChores.reduce(
       (acc: { [key: string]: AccountChore[] }, chore) => {
+        // Create date in UTC and subtract one day since due dates are end-of-day
         const date = new Date(chore.dueDate);
-        date.setUTCHours(0, 0, 0, 0);
-        const dateKey = date.toISOString().split('T')[0];
+        const adjustedDate = new Date(date.getTime() - 24 * 60 * 60 * 1000);
+        const dateKey = adjustedDate.toISOString().split('T')[0];
 
         if (!acc[dateKey]) {
           acc[dateKey] = [];
@@ -49,18 +50,15 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
       {}
     );
 
-    // Get current week's start and end
+    // Get current week's start and end in UTC
     const today = new Date();
-    // Set to UTC midnight
     today.setUTCHours(0, 0, 0, 0);
     const endOfWeek = new Date(today);
     endOfWeek.setDate(today.getDate() + 7);
 
     // Convert to array with labels
     return Object.entries(grouped).map(([dateStr, chores]) => {
-      const date = new Date(dateStr);
-      // Ensure we're comparing UTC dates
-      date.setUTCHours(0, 0, 0, 0);
+      const date = new Date(dateStr + 'T00:00:00.000Z'); // Force UTC midnight
       const dayNames = [
         'Sunday',
         'Monday',
@@ -70,12 +68,14 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
         'Friday',
         'Saturday',
       ];
-      const dateString = date.toLocaleDateString(undefined, {
+
+      // Format the date string in UTC
+      const dateString = new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-        timeZone: 'UTC', // Use UTC to avoid timezone shifts
-      });
+        timeZone: 'UTC',
+      }).format(date);
 
       let label;
       if (date.getTime() < today.getTime()) {
@@ -83,7 +83,7 @@ const ChoresView = ({ isUser, data, onRefresh }: IChoreView) => {
       } else if (date.getTime() > endOfWeek.getTime()) {
         label = 'Upcoming';
       } else {
-        label = dayNames[date.getDay()];
+        label = dayNames[date.getUTCDay()];
       }
 
       return {

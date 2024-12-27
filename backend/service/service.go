@@ -218,15 +218,18 @@ func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore,
 			if sched.DayOfWeek == weekday {
 				// Set due date to end of the selected day (23:59:59)
 				dueDate := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 0, date.Location())
-				
+
+				accountChoreId := uuid.New()
 				// First assignment is PENDING, rest are PLANNED
 				status := models.AssignmentStatusPlanned
 				if isFirstAssignment {
+					firstAssignmentID = &accountChoreId
 					status = models.AssignmentStatusPending
 					isFirstAssignment = false
 				}
 
 				accountChore := models.AccountChore{
+					ID:           accountChoreId,
 					ChoreID:       chore.ID,
 					AccountID:     assignees[assigneeIndex],
 					HouseholdID:   chore.HouseholdID,
@@ -238,11 +241,6 @@ func (s *dbService) generateInitialAssignments(tx *gorm.DB, chore *models.Chore,
 
 				if err := tx.Create(&accountChore).Error; err != nil {
 					return nil, err
-				}
-
-				if isFirstAssignment {
-					firstAssignmentID = &accountChore.ID
-					isFirstAssignment = false
 				}
 
 				assigneeIndex = (assigneeIndex + 1) % len(assignees)
@@ -510,71 +508,111 @@ func (s *dbService) CompleteChore(accountChoreId uuid.UUID) error {
 
 	if accountChore.Chore.Type == models.ChoreTypeRecurring {
 		// Handle recurring chore logic
-		if err := s.handleRecurringChoreCompletion(tx, &accountChore.Chore, &accountChore); err != nil {
+		nextPendingID, err := s.handleRecurringChoreCompletion(tx, &accountChore.Chore, &accountChore)
+		if err != nil {
 			tx.Rollback()
 			return err
+		}
+
+		// Create notification for next pending assignment if one exists
+		if nextPendingID != nil {
+			notification := &models.Notification{
+				Action:         models.NotificationActionChoreAssigned,
+				AccountID:      accountChore.AccountID,
+				ChoreID:        &accountChore.ChoreID,
+				AccountChoreID: nextPendingID,
+			}
+
+			if err := s.CreateNotification(notification, householdMembers, accountChore.HouseholdID); err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
 	}
 
 	return tx.Commit().Error
 }
 
-func (s *dbService) handleRecurringChoreCompletion(tx *gorm.DB, chore *models.Chore, completedChore *models.AccountChore) error {
+func (s *dbService) handleRecurringChoreCompletion(tx *gorm.DB, chore *models.Chore, completedChore *models.AccountChore) (*uuid.UUID, error) {
 	// Get the rotation for this chore
 	var rotations []models.ChoreRotation
 	if err := tx.Where("chore_id = ?", chore.ID).Order("rotation_order").Find(&rotations).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get the schedule
 	var schedules []models.ChoreSchedule
 	if err := tx.Where("chore_id = ?", chore.ID).Find(&schedules).Error; err != nil {
-		return err
+		return nil, err
 	}
 
-	// Find the next assignee in rotation
-	nextRotationOrder := (completedChore.RotationOrder + 1) % len(rotations)
+	// Get the next occurrence date based on completion time
+	nextDate := s.calculateNextOccurrence(*completedChore.CompletedAt)
+
+	// Count assignments between completion and next date
+	var assignmentCount int64
+	if err := tx.Model(&models.AccountChore{}).
+		Where("chore_id = ? AND due_date > ? AND due_date < ? AND status IN (?)",
+			chore.ID,
+			completedChore.CompletedAt,
+			nextDate,
+			[]models.AssignmentStatus{models.AssignmentStatusPending, models.AssignmentStatusPlanned}).
+		Count(&assignmentCount).Error; err != nil {
+		return nil, err
+	}
+
+	// Calculate next rotation order based on completed assignment and intervening assignments
+	nextRotationOrder := (completedChore.RotationOrder + 1 + int(assignmentCount)) % len(rotations)
 	nextAssignee := rotations[nextRotationOrder].AccountID
 
-	// Get the next occurrence date based on completion time
-	nextDate := s.calculateNextOccurrence(completedChore.DueDate)
-
-	// Check if there's already a future assignment
-	var existingAssignment models.AccountChore
+	// Create the next week's assignment
+	var nextWeekAssignment models.AccountChore
 	err := tx.Where("chore_id = ? AND due_date = ? AND status IN (?)",
 		chore.ID, nextDate, []models.AssignmentStatus{models.AssignmentStatusPending, models.AssignmentStatusPlanned}).
-		Order("due_date").First(&existingAssignment).Error
+		First(&nextWeekAssignment).Error
 
 	if err == gorm.ErrRecordNotFound {
-		// Create new assignment if none exists
-		newAssignment := models.AccountChore{
+		nextWeekAssignment = models.AccountChore{
 			ChoreID:       chore.ID,
 			AccountID:     nextAssignee,
 			HouseholdID:   chore.HouseholdID,
 			DueDate:       nextDate,
-			Status:        models.AssignmentStatusPending,
+			Status:        models.AssignmentStatusPlanned,
 			RotationOrder: nextRotationOrder,
 			Points:        chore.Points,
 		}
-		if err := tx.Create(&newAssignment).Error; err != nil {
-			return err
+		if err := tx.Create(&nextWeekAssignment).Error; err != nil {
+			return nil, err
 		}
 	} else if err != nil {
-		return err
-	} else if completedChore.CompletedAt.After(existingAssignment.DueDate) {
-		// If completed late, update future assignments' due dates
-		if err := s.updateFutureAssignments(tx, chore, completedChore, schedules); err != nil {
-			return err
+		return nil, err
+	}
+
+	// Find and update the next immediate assignment to pending
+	var nextImmediateAssignment models.AccountChore
+	err = tx.Where("chore_id = ? AND due_date > ? AND status = ?",
+		chore.ID, completedChore.CompletedAt, models.AssignmentStatusPlanned).
+		Order("due_date").First(&nextImmediateAssignment).Error
+
+	var nextPendingID *uuid.UUID
+	if err == nil {
+		nextImmediateAssignment.Status = models.AssignmentStatusPending
+		if err := tx.Save(&nextImmediateAssignment).Error; err != nil {
+			return nil, err
 		}
-	} else {
-		// If completed on time, set the next assignment as pending
-		existingAssignment.Status = models.AssignmentStatusPending
-		if err := tx.Save(&existingAssignment).Error; err != nil {
-			return err
+		nextPendingID = &nextImmediateAssignment.ID
+	} else if err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	// If completed late, update all future assignments' due dates
+	if completedChore.CompletedAt.After(completedChore.DueDate) {
+		if err := s.updateFutureAssignments(tx, chore, completedChore, schedules); err != nil {
+			return nil, err
 		}
 	}
 
-	return nil
+	return nextPendingID, nil
 }
 
 func (s *dbService) calculateNextOccurrence(lastDueDate time.Time) time.Time {	
