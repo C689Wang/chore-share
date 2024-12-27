@@ -46,4 +46,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NotificationBadge; 
+export default NotificationBadge;

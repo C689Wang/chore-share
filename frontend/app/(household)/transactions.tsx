@@ -4,6 +4,7 @@ import { useAppSelector } from '@/store/hooks';
 import {
   useCreateTransactionMutation,
   useGetTransactionSummaryQuery,
+  useSettleTransactionSplitMutation,
 } from '@/store/transactionsApi';
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -21,7 +22,11 @@ import {
 } from 'react-native';
 import TransactionCard from '../../components/TransactionCard';
 import { styles } from '../../styles/transactions.styles';
-import { formatToLocalDate, parseUTCDate, toUTCString } from '@/utils/dateUtils';
+import {
+  formatToLocalDate,
+  parseUTCDate,
+  toUTCString,
+} from '@/utils/dateUtils';
 
 interface GroupedTransactions {
   date: string;
@@ -59,6 +64,7 @@ const TransactionsScreen = () => {
   });
 
   const [createTransaction] = useCreateTransactionMutation();
+  const [settleTransactionSplit] = useSettleTransactionSplitMutation();
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -104,6 +110,19 @@ const TransactionsScreen = () => {
     }
   };
 
+  const handleSettleTransaction = async (splitId: string) => {
+    if (!selectedHouseholdId || !user?.id) return;
+    try {
+      await settleTransactionSplit({
+        accountId: user.id,
+        householdId: selectedHouseholdId,
+        splitId: splitId,
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to settle transaction:', error);
+    }
+  };
+
   const getGroupedTransactions = (
     summary: TransactionSummary | undefined | null
   ): GroupedTransactions[] => {
@@ -135,7 +154,9 @@ const TransactionsScreen = () => {
         let date;
         try {
           const spentAtDate = parseUTCDate(
-            typeof split.spentAt === 'string' ? split.spentAt : split.spentAt.toISOString()
+            typeof split.spentAt === 'string'
+              ? split.spentAt
+              : split.spentAt.toISOString()
           );
 
           date = spentAtDate.toISOString().split('T')[0];
@@ -382,7 +403,11 @@ const TransactionsScreen = () => {
             <View style={styles.groupContainer}>
               <Text style={styles.dateLabel}>{item.label}</Text>
               {item.splits.map((split) => (
-                <TransactionCard key={split.id} split={split} />
+                <TransactionCard
+                  key={split.id}
+                  split={split}
+                  onSettle={handleSettleTransaction}
+                />
               ))}
             </View>
           )}

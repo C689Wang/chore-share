@@ -24,8 +24,8 @@ const HomeHeader: React.FC = () => {
         <NotificationsButton onPress={() => setIsModalOpen(true)} />
       </View>
       <NotificationsModal
-        isModalOpen={isModalOpen}
-        setIsModalOpen={setIsModalOpen}
+        isVisible={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </View>
   );

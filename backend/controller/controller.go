@@ -427,3 +427,94 @@ func (c *Controller) MarkNotificationAsSeen(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Notification marked as seen"})
 }
+
+func (c *Controller) CreateChoreReview(ctx *gin.Context) {
+	var body models.CreateChoreReviewRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	accountChoreUUID := ctx.Param("accountChoreId")
+	accountChoreId, err := uuid.Parse(accountChoreUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	accountId, err := uuid.Parse(ctx.Param("accountId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	householdId, err := uuid.Parse(ctx.Param("householdId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	review := models.ChoreReview{
+		AccountChoreID: accountChoreId,
+		ReviewerID:      accountId,
+		HouseholdID:     householdId,
+		ReviewerStatus:  body.ReviewerStatus,
+		Review:          body.ReviewerComment,
+	}
+
+	if err := c.service.CreateChoreReview(&review); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Chore review created successfully"})
+}
+
+func (c *Controller) GetChoreReview(ctx *gin.Context) {
+	reviewId, err := uuid.Parse(ctx.Param("reviewId"))	
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	review, err := c.service.GetChoreReview(reviewId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, review)
+}
+
+func (c *Controller) MarkNotificationsAsSeen(ctx *gin.Context) {
+	var body struct {
+		NotificationIDs []string `json:"notificationIds" binding:"required"`
+	}
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	accountID, err := uuid.Parse(ctx.Param("accountId"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Convert string IDs to UUID
+	notificationIDs := make([]uuid.UUID, len(body.NotificationIDs))
+	for i, id := range body.NotificationIDs {
+		notificationIDs[i], err = uuid.Parse(id)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid notification ID format"})
+			return
+		}
+	}
+
+	if err := c.service.MarkNotificationsAsSeen(accountID, notificationIDs); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Notifications marked as seen"})
+}

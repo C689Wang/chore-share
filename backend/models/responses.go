@@ -104,6 +104,7 @@ type NotificationResponse struct {
 	ChoreInfo    *ChoreInfo   `json:"choreInfo,omitempty"`
 	ReviewInfo   *ReviewInfo  `json:"reviewInfo,omitempty"`
 	Transaction  *TransactionInfo `json:"transactionInfo,omitempty"`
+	Split        *SplitInfo 	`json:"splitInfo,omitempty"`
 }
 
 type ActorInfo struct {
@@ -121,10 +122,31 @@ type ChoreInfo struct {
 type ReviewInfo struct {
 	ReviewID uuid.UUID `json:"reviewId"`
 	Review   string    `json:"review"`
+	ChoreName string `json:"choreName"`
+	AccountChoreID uuid.UUID `json:"accountChoreId"`
 }
 
 type TransactionInfo struct {
 	TransactionID uuid.UUID `json:"transactionId"`
 	Description   string    `json:"description"`
 	AmountInCents int64     `json:"amountInCents"`
+}
+
+type SplitInfo struct {
+	SplitID uuid.UUID `json:"id"`
+	AmountInCents int64 `json:"amountInCents"`
+	OwedByID uuid.UUID `json:"owedById"`
+	OwedToID uuid.UUID `json:"owedToId"`
+	Description string `json:"description"`
+	OwedByName string `json:"owedByName"`
+	OwedToName string `json:"owedToName"`
+}
+
+type ChoreReviewResponse struct {
+	ID uuid.UUID `json:"id"`
+	ReviewerID uuid.UUID `json:"reviewerId"`
+	ReviewerName string `json:"reviewerName"`
+	ReviewComment string `json:"reviewComment"`
+	ReviewerStatus string `json:"reviewerStatus"`
+	CreatedAt time.Time `json:"createdAt"`
 }

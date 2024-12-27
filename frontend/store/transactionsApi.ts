@@ -45,12 +45,19 @@ export const transactionsApi = api.injectEndpoints({
     }),
 
     // Settle a transaction split
-    settleTransactionSplit: builder.mutation<void, string>({
-      query: (splitId) => ({
-        url: `/transactions/splits/${splitId}/settle`,
+    settleTransactionSplit: builder.mutation<
+      void,
+      { accountId: string; householdId: string; splitId: string }
+    >({
+      query: ({ accountId, householdId, splitId }) => ({
+        url: `/accounts/${accountId}/households/${householdId}/transactions/${splitId}/settle`,
         method: 'PUT',
       }),
-      invalidatesTags: (result, error, splitId) => ['Transaction'],
+      invalidatesTags: (result, error, { householdId, accountId }) => [
+        { type: 'Transaction', id: householdId },
+        { type: 'Transaction', id: `${accountId}-${householdId}` },
+        'Transaction',
+      ],
     }),
   }),
 });

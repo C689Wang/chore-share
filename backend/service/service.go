@@ -30,6 +30,9 @@ type DBService interface {
 	CreateNotification(notification *models.Notification, recipientIDs []uuid.UUID, householdID uuid.UUID) error
 	GetAccountNotifications(accountID uuid.UUID, householdID uuid.UUID) ([]models.NotificationResponse, error)
 	MarkNotificationAsSeen(accountID uuid.UUID, notificationID uuid.UUID) error
+	CreateChoreReview(review *models.ChoreReview) error
+	GetChoreReview(reviewID uuid.UUID) (models.ChoreReviewResponse, error)
+	MarkNotificationsAsSeen(accountID uuid.UUID, notificationIDs []uuid.UUID) error
 }
 
 type dbService struct {
@@ -534,7 +537,7 @@ func (s *dbService) handleRecurringChoreCompletion(tx *gorm.DB, chore *models.Ch
 	nextAssignee := rotations[nextRotationOrder].AccountID
 
 	// Get the next occurrence date based on completion time
-	nextDate := s.calculateNextOccurrence(completedChore.DueDate, schedules)
+	nextDate := s.calculateNextOccurrence(completedChore.DueDate)
 
 	// Check if there's already a future assignment
 	var existingAssignment models.AccountChore
@@ -574,7 +577,7 @@ func (s *dbService) handleRecurringChoreCompletion(tx *gorm.DB, chore *models.Ch
 	return nil
 }
 
-func (s *dbService) calculateNextOccurrence(lastDueDate time.Time, schedules []models.ChoreSchedule) time.Time {	
+func (s *dbService) calculateNextOccurrence(lastDueDate time.Time) time.Time {	
 	// Add 7 days to get to the same weekday next week
 	nextDate := lastDueDate.AddDate(0, 0, 7)
 	
@@ -591,7 +594,7 @@ func (s *dbService) updateFutureAssignments(tx *gorm.DB, chore *models.Chore, co
 	}
 
 	// Calculate the new base date for the schedule
-	nextDate := s.calculateNextOccurrence(*completedChore.CompletedAt, schedules)
+	nextDate := s.calculateNextOccurrence(*completedChore.CompletedAt)
 
 	// First assignment should be pending, rest remain planned
 	for i, assignment := range futureAssignments {
@@ -603,7 +606,7 @@ func (s *dbService) updateFutureAssignments(tx *gorm.DB, chore *models.Chore, co
 			return err
 		}
 		// Calculate next date for subsequent assignments
-		nextDate = s.calculateNextOccurrence(nextDate, schedules)
+		nextDate = s.calculateNextOccurrence(nextDate)
 	}
 
 	return nil
@@ -621,18 +624,6 @@ func (s *dbService) CreateTransaction(transaction *models.Transaction) error {
 	if err := tx.Model(&models.AccountHousehold{}).
 		Where("household_id = ?", transaction.HouseholdID).
 		Pluck("account_id", &householdMembers).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Create transaction notification
-	notification := &models.Notification{
-		Action:        models.NotificationActionTransactionAdded,
-		AccountID:     transaction.PaidByID,
-		TransactionID: &transaction.ID,
-	}
-
-	if err := s.CreateNotification(notification, householdMembers, transaction.HouseholdID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -666,7 +657,22 @@ func (s *dbService) CreateTransaction(transaction *models.Transaction) error {
 		}
 	}
 
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	// Create transaction notification
+	notification := &models.Notification{
+		Action:        models.NotificationActionTransactionAdded,
+		AccountID:     transaction.PaidByID,
+		TransactionID: &transaction.ID,
+	}
+	
+	if err := s.CreateNotification(notification, householdMembers, transaction.HouseholdID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *dbService) GetTransactionSummary(accountID uuid.UUID, householdID uuid.UUID, month time.Time) (models.TransactionSummary, error) {
@@ -833,15 +839,22 @@ func (s *dbService) SettleTransactionSplit(splitID uuid.UUID) error {
 		return err
 	}
 
-	// Only notify the person who paid (OwedTo) when someone settles
-	notification := &models.Notification{
-		Action:        models.NotificationActionTransactionSettled,
-		AccountID:     split.OwedByID,  // person who settled
-		TransactionID: &split.TransactionID,
+	var householdMembers []uuid.UUID
+	if err := tx.Model(&models.AccountHousehold{}).
+		Where("household_id = ?", split.Transaction.HouseholdID).
+		Pluck("account_id", &householdMembers).Error; err != nil {
+		tx.Rollback()
+		return err
 	}
 
-	// Only notify the person who is owed the money
-	if err := s.CreateNotification(notification, []uuid.UUID{split.OwedToID}, split.Transaction.HouseholdID); err != nil {
+	notification := &models.Notification{
+		Action:        models.NotificationActionTransactionSettled,
+		AccountID:     split.OwedToID,
+		TransactionID: &split.TransactionID,
+		SplitID:       &split.ID,
+	}
+
+	if err := s.CreateNotification(notification, householdMembers, split.Transaction.HouseholdID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -886,6 +899,9 @@ func (s *dbService) GetAccountNotifications(accountID uuid.UUID, householdID uui
 		Preload("Notification.AccountChore.Chore").
 		Preload("Notification.Transaction").
 		Preload("Notification.Review").
+		Preload("Notification.Split").
+		Preload("Notification.Split.OwedBy").
+		Preload("Notification.Split.OwedTo").
 		Order("created_at DESC").
 		Find(&accountNotifications).Error
 	if err != nil {
@@ -924,15 +940,28 @@ func (s *dbService) GetAccountNotifications(accountID uuid.UUID, householdID uui
 				response[i].ReviewInfo = &models.ReviewInfo{
 					ReviewID: notif.Review.ID,
 					Review:   notif.Review.Review,
+					ChoreName: notif.AccountChore.Chore.Title,
+					AccountChoreID: notif.AccountChore.ID,
 				}
 			}
-		case models.NotificationActionTransactionAdded,
-			 models.NotificationActionTransactionSettled:
+		case models.NotificationActionTransactionAdded:
 			if notif.Transaction.ID != uuid.Nil {
 				response[i].Transaction = &models.TransactionInfo{
 					TransactionID:  notif.Transaction.ID,
 					Description:    notif.Transaction.Description,
 					AmountInCents: notif.Transaction.AmountInCents,
+				}
+			}
+		case models.NotificationActionTransactionSettled:
+			if notif.Split.ID != uuid.Nil {
+				response[i].Split = &models.SplitInfo{
+					SplitID: notif.Split.ID,
+					AmountInCents: notif.Split.AmountInCents,
+					OwedByID: notif.Split.OwedByID,
+					OwedToID: notif.Split.OwedToID,
+					Description: notif.Transaction.Description,
+					OwedByName: notif.Split.OwedBy.Name,
+					OwedToName: notif.Split.OwedTo.Name,
 				}
 			}
 		}
@@ -943,5 +972,59 @@ func (s *dbService) GetAccountNotifications(accountID uuid.UUID, householdID uui
 func (s *dbService) MarkNotificationAsSeen(accountID uuid.UUID, notificationID uuid.UUID) error {
 	return s.db.Model(&models.AccountNotification{}).
 		Where("account_id = ? AND notification_id = ?", accountID, notificationID).
+		Update("seen", true).Error
+}
+
+func (s *dbService) CreateChoreReview(review *models.ChoreReview) error {
+	err := s.db.Create(review).Error
+	if err != nil {
+		return err
+	}
+
+	var householdMembers []uuid.UUID
+	if err := s.db.Model(&models.AccountHousehold{}).
+		Where("household_id = ?", review.HouseholdID).
+		Pluck("account_id", &householdMembers).Error; err != nil {
+		return err
+	}
+
+	notification := models.Notification{
+		Action:        models.NotificationActionReviewSubmitted,
+		AccountID:     review.ReviewerID,
+		AccountChoreID: &review.AccountChoreID,
+		ReviewID:      &review.ID,
+		HouseholdID:   review.HouseholdID,
+	}
+
+	err = s.CreateNotification(&notification, householdMembers, review.HouseholdID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *dbService) GetChoreReview(reviewID uuid.UUID) (models.ChoreReviewResponse, error) {
+	var review models.ChoreReview
+	err := s.db.Where("id = ?", reviewID).
+		Preload("Reviewer").
+		First(&review).Error
+	if err != nil {
+		return models.ChoreReviewResponse{}, err
+	}
+
+	return models.ChoreReviewResponse{
+		ID:             review.ID,
+		ReviewerID:     review.ReviewerID,
+		ReviewerName:   review.Reviewer.Name,
+		ReviewerStatus: review.ReviewerStatus,
+		ReviewComment:  review.Review,
+		CreatedAt:      review.CreatedAt,
+	}, nil
+}
+
+func (s *dbService) MarkNotificationsAsSeen(accountID uuid.UUID, notificationIDs []uuid.UUID) error {
+	return s.db.Model(&models.AccountNotification{}).
+		Where("account_id = ? AND id IN ?", accountID, notificationIDs).
 		Update("seen", true).Error
 }

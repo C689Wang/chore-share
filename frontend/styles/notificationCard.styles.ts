@@ -1,49 +1,57 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    padding: 8,
+    marginVertical: 2,
+    marginHorizontal: 8,
+    alignItems: 'center',
+  },
   avatar: {
     marginRight: 8,
   },
-  container: {
-    height: 70,
-    width: 325,
-    display: 'flex',
-    alignContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    position: 'relative',
-  },
-  image: {
-    width: 70,
-    height: 70,
-    borderRadius: 50,
+  textCol: {
+    flex: 1,
     marginRight: 8,
   },
-  textName: {
-    fontWeight: '900',
-  },
-  textAction: {},
-  textChore: {
-    fontWeight: '700',
-  },
   textRow: {
-    display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
   },
-  textCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    rowGap: 5,
+  textName: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  textAction: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  textChore: {
+    fontSize: 14,
+    marginTop: 2,
+    color: '#666',
+    fontWeight: '600',
   },
   textDate: {
     fontSize: 12,
+    color: '#999',
+    marginTop: 2,
   },
-  reviewButton: {
-    display: 'flex',
-    color: 'blue',
-    fontSize: 15,
-    position: 'absolute',
-    top: 5,
-    right: 0,
+  buttonContainer: {
+    justifyContent: 'center',
+    minWidth: 70,
+  },
+  actionButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  actionButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

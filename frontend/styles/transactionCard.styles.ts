@@ -25,16 +25,26 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   owedTransaction: {
-    borderLeftColor: '#4CAF50',  // Green for money you're owed
+    borderLeftColor: '#4CAF50', // Green for money you're owed
   },
   owingTransaction: {
-    borderLeftColor: '#FF5252',  // Red for money you owe
+    borderLeftColor: '#FF5252', // Red for money you owe
+  },
+  settledTransaction: {
+    borderLeftColor: '#A5D6A7', // Lighter green for settled transactions
+    backgroundColor: '#F5F5F5',
   },
   transactionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  transactionFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
   },
   transactionTitle: {
     fontSize: 16,
@@ -53,9 +63,28 @@ export const styles = StyleSheet.create({
   owingAmount: {
     color: '#FF5252',
   },
+  settledAmount: {
+    color: '#A5D6A7',
+  },
   transactionDetail: {
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
+  },
+  settleButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  settleButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  settledText: {
+    color: '#4CAF50',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
