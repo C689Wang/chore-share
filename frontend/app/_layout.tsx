@@ -16,7 +16,6 @@ import { Stack } from 'expo-router';
 import { AuthProvider } from '../context/auth';
 import { store, persistor } from '../store/store';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import HomeHeader from '@/components/HomeHeader';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();

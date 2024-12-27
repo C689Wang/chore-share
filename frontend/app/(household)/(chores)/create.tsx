@@ -31,6 +31,7 @@ interface Weekday {
 export default function Create() {
   const { user } = useAuth();
   const [title, setTitle] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState<string>('');
   const [dueDate, setDueDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);

@@ -1,7 +1,6 @@
 import { TabList, Tabs, TabSlot, TabTrigger } from 'expo-router/ui';
 import { TabButton } from '../../components/tabs/TabButton';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 
 export default function HouseholdLayout() {
   return (
