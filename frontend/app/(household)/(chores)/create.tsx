@@ -31,7 +31,6 @@ interface Weekday {
 export default function Create() {
   const { user } = useAuth();
   const [title, setTitle] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState<string>('');
   const [dueDate, setDueDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -85,8 +84,6 @@ export default function Create() {
   ) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
-      console.log(selectedDate);
-      console.log(selectedDate.toISOString());
       setDueDate(selectedDate);
     }
   };
@@ -163,8 +160,8 @@ export default function Create() {
       if (isRepeated) {
         params.frequency = 'WEEKLY' as FrequencyType;
         params.schedule = weekdays
-          .map((day, index) => (day.selected ? (index + 1) % 7 || 7 : 0))
-          .filter((day) => day !== 0);
+          .map((day, index) => (day.selected ? index : -1))
+          .filter((day) => day !== -1);
       } else {
         params.endDate = dueDate;
       }

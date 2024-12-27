@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { accountApi, User } from '../api/accounts';
+import { router } from 'expo-router';
 
 interface GoogleUser {
   id: string;
@@ -96,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await GoogleSignin.signOut();
       setUser(null);
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;

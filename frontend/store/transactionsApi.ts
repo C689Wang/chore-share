@@ -8,21 +8,6 @@ import type {
 
 export const transactionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    // Get transactions for a household in a specific month
-    getHouseholdTransactions: builder.query<
-      Transaction[],
-      { householdId: string; month?: string }
-    >({
-      query: ({ householdId, month }) => ({
-        url: `/accounts/${householdId}/transactions`,
-        params: { month },
-      }),
-      providesTags: (result, error, { householdId }) => [
-        { type: 'Transaction', id: householdId },
-        'Transaction',
-      ],
-    }),
-
     // Get transaction summary for a user in a household
     getTransactionSummary: builder.query<
       TransactionSummary,
@@ -34,15 +19,6 @@ export const transactionsApi = api.injectEndpoints({
       }),
       providesTags: (result, error, { householdId, accountId }) => [
         { type: 'Transaction', id: `${accountId}-${householdId}` },
-        'Transaction',
-      ],
-    }),
-
-    // Get splits for a specific transaction
-    getTransactionSplits: builder.query<TransactionSplit[], string>({
-      query: (transactionId) => `/transactions/${transactionId}/splits`,
-      providesTags: (result, error, transactionId) => [
-        { type: 'Transaction', id: `splits-${transactionId}` },
         'Transaction',
       ],
     }),
@@ -80,9 +56,7 @@ export const transactionsApi = api.injectEndpoints({
 });
 
 export const {
-  useGetHouseholdTransactionsQuery,
   useGetTransactionSummaryQuery,
-  useGetTransactionSplitsQuery,
   useCreateTransactionMutation,
   useSettleTransactionSplitMutation,
 } = transactionsApi;

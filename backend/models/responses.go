@@ -69,10 +69,62 @@ type ChoreAssignmentResponse struct {
 
 type TransactionResponse struct {
 	ID            uuid.UUID  `json:"id"`
-	Name          string     `json:"name"`
 	Description   string     `json:"description"`
-	AmountInCents int       `json:"amountInCents"`
+	AmountInCents int64     `json:"amountInCents"`
 	AccountID     uuid.UUID  `json:"accountId"`
 	HouseholdID   uuid.UUID  `json:"householdId"`
-	SpentOn       time.Time `json:"spentOn"`
+	SpentAt       time.Time `json:"spentAt"`
+}
+
+type TransactionMemberResponse struct {
+	ID uuid.UUID `json:"id"`
+	Name string `json:"name"`
+}
+
+type TransactionSplitResponse struct {
+	ID            uuid.UUID          `json:"id"`
+	TransactionID uuid.UUID          `json:"transactionId"`
+	Description   string             `json:"description"`
+	SpentAt       time.Time          `json:"spentAt"`
+	OwedByID      uuid.UUID          `json:"owedById"`
+	OwedToID      uuid.UUID          `json:"owedToId"`
+	AmountInCents int64              `json:"amountInCents"`
+	IsSettled     bool               `json:"isSettled"`
+	SettledAt     *time.Time         `json:"settledAt"`
+	OwedBy        TransactionMemberResponse    `json:"owedBy"`
+	OwedTo        TransactionMemberResponse    `json:"owedTo"`
+}
+
+type NotificationResponse struct {
+	ID           uuid.UUID    `json:"id"`
+	Seen         bool         `json:"seen"`
+	CreatedAt    time.Time    `json:"createdAt"`
+	Action       string       `json:"action"`
+	Actor        ActorInfo    `json:"actor"`
+	ChoreInfo    *ChoreInfo   `json:"choreInfo,omitempty"`
+	ReviewInfo   *ReviewInfo  `json:"reviewInfo,omitempty"`
+	Transaction  *TransactionInfo `json:"transactionInfo,omitempty"`
+}
+
+type ActorInfo struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+type ChoreInfo struct {
+	ChoreID        uuid.UUID `json:"choreId"`
+	AccountChoreID uuid.UUID `json:"accountChoreId"`
+	Title          string    `json:"title"`
+	DueDate        time.Time `json:"dueDate"`
+}
+
+type ReviewInfo struct {
+	ReviewID uuid.UUID `json:"reviewId"`
+	Review   string    `json:"review"`
+}
+
+type TransactionInfo struct {
+	TransactionID uuid.UUID `json:"transactionId"`
+	Description   string    `json:"description"`
+	AmountInCents int64     `json:"amountInCents"`
 }

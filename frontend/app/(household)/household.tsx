@@ -9,6 +9,7 @@ import { useAuth } from '@/context/auth';
 import { useAppSelector } from '@/store/hooks';
 import { LeaderboardEntry } from '@/models/households';
 import Avatar from '@/components/Avatar';
+import HomeHeader from '@/components/HomeHeader';
 
 const Household = () => {
   const { user } = useAuth();
@@ -77,6 +78,7 @@ const Household = () => {
         <ActivityIndicator />
       ) : (
         <>
+          <HomeHeader />
           <Text style={styles.monthTitle}>{getCurrentMonth()}</Text>
           <View style={styles.leaderboardContainer}>
             {leaderboard.map((entry: LeaderboardEntry, index: number) => (

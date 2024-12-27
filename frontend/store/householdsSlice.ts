@@ -12,11 +12,14 @@ const householdsSlice = createSlice({
   name: 'households',
   initialState,
   reducers: {
-    setSelectedHousehold: (state, action: PayloadAction<string | null>) => {
+    setSelectedHousehold: (state, action: PayloadAction<string>) => {
       state.selectedHouseholdId = action.payload;
+    },
+    clearSelectedHousehold: (state) => {
+      state.selectedHouseholdId = null;
     },
   },
 });
 
-export const { setSelectedHousehold } = householdsSlice.actions;
+export const { setSelectedHousehold, clearSelectedHousehold } = householdsSlice.actions;
 export default householdsSlice.reducer;

@@ -57,8 +57,8 @@ export default function Home() {
   const handleJoinHousehold = async () => {
     try {
       await joinHousehold({
-        householdID: householdId,
-        accountID: user!.id,
+        householdId: householdId,
+        accountId: user.id,
         password: password,
       }).unwrap();
 

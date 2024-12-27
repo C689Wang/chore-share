@@ -8,44 +8,46 @@ import (
 
 type Transaction struct {
 	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	HouseholdID   uuid.UUID
-	PaidByID      uuid.UUID      // Who paid for the expense
-	AmountInCents int64          // Store in cents to avoid floating point issues
-	Description   string
-	SpentAt       time.Time      // When the expense occurred
-	CreatedAt     time.Time
+	HouseholdID   uuid.UUID `gorm:"type:uuid;not null"`
+	PaidByID      uuid.UUID `gorm:"type:uuid;not null"`
+	AmountInCents int64     `gorm:"not null"`
+	Description   string    `gorm:"not null"`
+	SpentAt       time.Time `gorm:"not null"`
+	CreatedAt     time.Time `gorm:"not null"`
 	// Add any other transaction metadata
 }
 
 type TransactionSplit struct {
-	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	TransactionID uuid.UUID
-	OwedByID      uuid.UUID      // Who needs to pay back
-	OwedToID      uuid.UUID      // Who paid (same as Transaction.PaidByID)
-	AmountInCents int64          // Their share of the split
-	IsSettled     bool           // Whether this split has been paid back
+	ID            uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	TransactionID uuid.UUID   `gorm:"type:uuid;not null"`
+	OwedByID      uuid.UUID   `gorm:"type:uuid;not null"`
+	OwedToID      uuid.UUID   `gorm:"type:uuid;not null"`
+	AmountInCents int64       `gorm:"not null"`
+	IsSettled     bool        `gorm:"not null;default:false"`
 	SettledAt     *time.Time
 	Transaction   Transaction    `gorm:"foreignKey:TransactionID"`
+	OwedBy        Account        `gorm:"foreignKey:OwedByID"`
+	OwedTo        Account        `gorm:"foreignKey:OwedToID"`
 }
 
 type TransactionSummary struct {
-	Month        time.Time                // The month this summary is for
-	TotalOwed    int64                    // Total amount others owe you
-	TotalOwing   int64                    // Total amount you owe others
-	OwedDetails  []TransactionOwedDetail  // Breakdown of who owes you what
-	OwingDetails []TransactionOwingDetail // Breakdown of what you owe to whom
+	Month        time.Time                  `json:"month"`
+	TotalOwed    int64                      `json:"totalOwed"`
+	TotalOwing   int64                      `json:"totalOwing"`
+	OwedDetails  []TransactionOwedDetail    `json:"owedDetails"`
+	OwingDetails []TransactionOwingDetail  	`json:"owingDetails"`
 }
 
 type TransactionOwedDetail struct {
-	OwedByID      uuid.UUID
-	OwedByName    string
-	AmountInCents int64
-	Splits        []TransactionSplit
+	OwedByID      uuid.UUID                  `json:"owedById"`
+	OwedByName    string                     `json:"owedByName"`
+	AmountInCents int64                      `json:"amountInCents"`
+	Splits        []TransactionSplitResponse `json:"splits"`
 }
 
 type TransactionOwingDetail struct {
-	OwedToID      uuid.UUID
-	OwedToName    string
-	AmountInCents int64
-	Splits        []TransactionSplit
+	OwedToID      uuid.UUID                  `json:"owedToId"`
+	OwedToName    string                     `json:"owedToName"`
+	AmountInCents int64                      `json:"amountInCents"`
+	Splits        []TransactionSplitResponse `json:"splits"`
 }
