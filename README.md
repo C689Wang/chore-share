@@ -1,5 +1,17 @@
 # chore-share
 
+<img width="361" alt="Screenshot 2025-01-13 at 12 43 36 PM" src="https://github.com/user-attachments/assets/f409bc98-cd0f-4907-8ca7-eede899d3ef4" />
+
+<img width="355" alt="Screenshot 2025-01-13 at 12 46 43 PM" src="https://github.com/user-attachments/assets/1933a5a0-032f-4e1c-8eec-ce60a32e565f" />
+
+<img width="361" alt="Screenshot 2025-01-13 at 12 47 32 PM" src="https://github.com/user-attachments/assets/6ce5b76e-1cb2-4b65-b0b2-c25f2a1aba5c" />
+
+<img width="356" alt="Screenshot 2025-01-13 at 12 48 45 PM" src="https://github.com/user-attachments/assets/59a53f4e-1e94-4258-bdf8-6580d47583aa" />
+
+<img width="355" alt="Screenshot 2025-01-13 at 12 49 11 PM" src="https://github.com/user-attachments/assets/23b758f5-caa0-4547-a641-c917869b4831" />
+
+<img width="355" alt="Screenshot 2025-01-13 at 12 49 32 PM" src="https://github.com/user-attachments/assets/a404afab-2f52-4d5e-a463-0f06782afd40" />
+
 Chore Share is a full-stack mobile application designed to help households manage and track shared responsibilities. The app allows users to create households, assign and track chores, manage shared expenses, and maintain a fair distribution of household tasks through a gamified point system.
 
 ## Features
